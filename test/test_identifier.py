@@ -17,15 +17,9 @@
 
 import json
 import unittest
-
 from os import makedirs
 from os.path import join, exists
-
-from oc_idmanager.doi import DOIManager
-from oc_idmanager.isbn import ISBNManager
-from oc_idmanager.issn import ISSNManager
-from oc_idmanager.orcid import ORCIDManager
-from oc_idmanager.pmid import PMIDManager
+from oc_idmanager import *
 
 
 class IdentifierManagerTest(unittest.TestCase):

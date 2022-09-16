@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oc_idmanager"
-version = "0.1.0"
+version = "0.1.1"
 description = "This library allows validating identifiers with DOI, ISBN, ISSN, ORCID, PMCID, and PMID schemes"
 authors = ["Silvio Peroni <essepuntato@gmail.com>", "Giuseppe Grieco <giuseppe.grieco3@unibo.it>", "Arianna Moretti <arianna.moretti4@unibo.it>", "Elia Rizzetto <elia.rizzetto@studio.unibo.it>", "Arcangelo Massari <arcangelo.massari@unibo.it>"]
 license = "ISC"
