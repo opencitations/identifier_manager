@@ -21,11 +21,11 @@ import unittest
 from os import makedirs
 from os.path import join, exists
 
-from oc_id_manager.doi import DOIManager
-from oc_id_manager.isbn import ISBNManager
-from oc_id_manager.issn import ISSNManager
-from oc_id_manager.orcid import ORCIDManager
-from oc_id_manager.pmid import PMIDManager
+from oc_idmanager.doi import DOIManager
+from oc_idmanager.isbn import ISBNManager
+from oc_idmanager.issn import ISSNManager
+from oc_idmanager.orcid import ORCIDManager
+from oc_idmanager.pmid import PMIDManager
 
 
 class IdentifierManagerTest(unittest.TestCase):

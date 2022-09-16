@@ -23,7 +23,7 @@ from requests.exceptions import ConnectionError
 from time import sleep
 from bs4 import BeautifulSoup
 
-from oc_id_manager.base import IdentifierManager
+from oc_idmanager.base import IdentifierManager
 
 
 class PMIDManager(IdentifierManager):

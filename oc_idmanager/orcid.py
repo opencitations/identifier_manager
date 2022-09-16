@@ -23,7 +23,7 @@ from requests import ReadTimeout
 from requests.exceptions import ConnectionError
 from time import sleep
 
-from oc_id_manager.base import IdentifierManager
+from oc_idmanager.base import IdentifierManager
 
 
 class ORCIDManager(IdentifierManager):

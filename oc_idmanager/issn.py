@@ -16,7 +16,7 @@
 
 
 from re import sub, match
-from oc_id_manager.base import IdentifierManager
+from oc_idmanager.base import IdentifierManager
 
 
 class ISSNManager(IdentifierManager):
