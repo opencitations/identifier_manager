@@ -16,14 +16,15 @@
 
 
 from oc_idmanager.base import IdentifierManager
-from re import sub
+from re import sub, match
+import re
 
 
 class ISBNManager(IdentifierManager):
     """This class implements an identifier manager for isbn identifier"""
     def __init__(self, data={}):
         """ISBN manager constructor."""
-        self.p = "isbn:"
+        self._p = "isbn:"
         self._data = data
         super(ISBNManager, self).__init__()
 
@@ -35,6 +36,7 @@ class ISBNManager(IdentifierManager):
             if isbn not in self._data or self._data[isbn] is None:
                 return (
                     self.check_digit(isbn)
+                    and self.syntax_ok(isbn)
                 )
             return self._data[isbn].get("valid")
 
@@ -47,18 +49,8 @@ class ISBNManager(IdentifierManager):
             return None
 
     def check_digit(self, isbn):
-        """Returns True, if ISBN (of length 13 or 10) is valid (this does not mean registered).
-
-        Args:
-            isbn (str): the isbn to check
-
-        Raises:
-            ValueError: if the len of isbn is not 10 or 13
-
-        Returns:
-            bool: true if issn is valid
-        """
         isbn = isbn.replace("-", "")
+        isbn = isbn.replace(" ", "")
         check_digit = False
         if len(isbn) == 13:
             total = 0
@@ -82,3 +74,16 @@ class ISBNManager(IdentifierManager):
                 check_digit = True
 
         return check_digit
+
+    def syntax_ok(self, id_string):
+        id_string.replace(" ", "")
+        id_string.replace("-", "")
+        if not id_string.startswith(self._p):
+            id_string = self._p+id_string
+        if len(id_string) - len(self._p) == 13:
+            return True if match("^isbn:97[89][0-9X]{10}$", id_string, re.IGNORECASE) else False
+        elif len(id_string) - len(self._p) == 10:
+            return True if match ("^isbn:[0-9X]{10}$", id_string, re.IGNORECASE) else False
+        else:
+            return False
+
