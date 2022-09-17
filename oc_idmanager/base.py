@@ -33,16 +33,15 @@ class IdentifierManager(metaclass=ABCMeta):
             "(http://opencitations.net; mailto:contact@opencitations.net)"
         }
 
-    @abstractmethod
     def is_valid(self, id_string):
         """Returns true if the id is valid, false otherwise.
 
         Args:
             id_string (str): id to check
         Returns:
-            bool: True if the id is valid, false otherwise.
+            bool: True if the id is valid, False otherwise.
         """
-        pass
+        return True
 
     @abstractmethod
     def normalise(self, id_string, include_prefix=False):
@@ -56,27 +55,35 @@ class IdentifierManager(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def check_digit(self, id_string):
-        """Returns True, if string format is valid (this does not mean registered).
+        """Returns True, if the check digit on the id_string passes (this does not mean that the id is also registered).
+        Not all id types have a check digit
 
         Args:
             id_string (str): the id to check
-
         Returns:
-            bool: true if id_string is formally correct (according to the id syntax)
+            bool: true if id_string passes the check digit of the specific id type
         """
-        pass
+        return True
 
-# @abstractmethod
-    def exists(self, id_string):
+    def syntax_ok(self, id_string):
+        """  Returns True if the syntax of the id string is correct, False otherwise.
+
+        Args:
+            id_string (str): the id string to check
+        Returns:
+            bool: True if the id syntax is correct, False otherwise.
         """
-        Optional Method
-        Returns True if the id exists, False otherwise. Not all child class check id existence because of API policies
+        return True
+
+    def exists(self, id_string):
+        """  Returns True if the id exists, False otherwise.
+        Not all child classes check id existence because of API policies
+
         Args:
             id_string (str): the id string for the api request
         Returns:
             bool: True if the id exists (is registered), False otherwise.
         """
-        pass
+        return True
 

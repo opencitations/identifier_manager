@@ -13,8 +13,7 @@
 # DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
-
-
+import re
 from re import sub, match
 from urllib.parse import quote
 from requests import get
@@ -38,31 +37,19 @@ class ORCIDManager(IdentifierManager):
         self._data = data
 
     def is_valid(self, id_string):
-        """Returns true if the orcid indicated is valid, false otherwise.
-
-        Args:
-            id_string (str): the orcid associated to check.
-
-        Returns:
-            bool: True if the orcid is valid, false otherwise.
-        """
         orcid = self.normalise(id_string)
-        return (
-            orcid is not None
-            and self.check_digit(orcid)
-            and self.exists(orcid)
-        )
+        if orcid is None:
+            return False
+        else:
+            if orcid not in self._data or self._data[orcid] is None:
+                return (
+                    self.syntax_ok(orcid)
+                    and self.check_digit(orcid)
+                    and self.exists(orcid)
+                )
+            return self._data[orcid].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-        """It normalize the orcid.
-
-        Args:
-            id_string (str): the orcid to normalize
-            include_prefix (bool, optional): indicates if includes the prefix. Defaults to False.
-
-        Returns:
-            str: normalized orcid
-        """
         try:
             orcid_string = sub("[^X0-9]", "", id_string.upper())
             return "%s%s-%s-%s-%s" % (
@@ -72,37 +59,25 @@ class ORCIDManager(IdentifierManager):
                 orcid_string[8:12],
                 orcid_string[12:16],
             )
-        except:  # Any error in processing the ISSN will return None
+        except:  # Any error in processing the id will return None
             return None
 
-    def check_digit(self,orcid):
-        """Returns True, if ORCID is valid according to orcid syntax (this does not mean registered).
+    def check_digit(self, orcid):
+        total = 0
+        for d in sub("[^X0-9]", "", orcid.upper())[:-1]:
+            i = 10 if d == "X" else int(d)
+            total = (total + i) * 2
+        reminder = total % 11
+        result = (12 - reminder) % 11
+        return (str(result) == orcid[-1]) or (result == 10 and orcid[-1] == "X")
 
-        Args:
-            orcid (str): the orcid to check
+    def syntax_ok(self, id_string):
+        if not id_string.startswith(self._p):
+            id_string = self._p+id_string
+        return True if match("^orcid:([0-9]{4}-){3}[0-9]{3}[0-9X]$", id_string, re.IGNORECASE) else False
 
-        Returns:
-            bool: true if orcid is valid, false otherwise
-        """
-        if match("^([0-9]{4}-){3}[0-9]{3}[0-9X]$", orcid):
-            total = 0
-            for d in sub("[^X0-9]", "", orcid.upper())[:-1]:
-                i = 10 if d == "X" else int(d)
-                total = (total + i) * 2
-            reminder = total % 11
-            result = (12 - reminder) % 11
-            return (str(result) == orcid[-1]) or (result == 10 and orcid[-1] == "X")
-        else:
-            return False
 
     def exists(self, orcid):
-        """
-        Returns True if the orcid id exists, False otherwise.
-        Args:
-            orcid (str): the orcid string for the api request
-        Returns:
-            bool: True if the orcid exists (is registered), False otherwise.
-        """
         if self._use_api_service:
             self._headers["Accept"] = "application/json"
             orcid = self.normalise(orcid)

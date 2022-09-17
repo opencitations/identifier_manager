@@ -21,33 +21,25 @@ from re import sub
 
 class ISBNManager(IdentifierManager):
     """This class implements an identifier manager for isbn identifier"""
-    def __init__(self):
+    def __init__(self, data={}):
+        """ISBN manager constructor."""
         self.p = "isbn:"
+        self._data = data
         super(ISBNManager, self).__init__()
 
     def is_valid(self, id_string):
-        """It returns the validity of an isbn.
-
-        Args:
-            id_string (str): the isbn to validate
-
-        Returns:
-            bool: true if the isbn is valid, false otherwise.
-        """
         isbn = self.normalise(id_string)
-        if (isbn is not None and self.check_digit(isbn)):
-            return True
+        if isbn is None:
+            return False
+        else:
+            if isbn not in self._data or self._data[isbn] is None:
+                return (
+                    self.check_digit(isbn)
+                )
+            return self._data[isbn].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-        """It normalizes the ISBN.
 
-        Args:
-            id_string (str): the isbn to normalize.
-            include_prefix (bool, optional): indicates if include the prefix. Defaults to False.
-
-        Returns:
-            str: the normalized isbn
-        """
         try:
             isbn_string = sub("[^X0-9]", "", id_string.upper())
             return "%s%s" % (self.p if include_prefix else "", isbn_string)

@@ -13,8 +13,7 @@
 # DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
-
-
+import re
 from re import sub, match
 from oc_idmanager.base import IdentifierManager
 
@@ -22,36 +21,25 @@ from oc_idmanager.base import IdentifierManager
 class ISSNManager(IdentifierManager):
     """This class implements an identifier manager for issn identifier"""
 
-    def __init__(self):
+    def __init__(self, data={}):
         """ISSN manager constructor."""
         self._p = "issn:"
+        self._data = data
         super(ISSNManager, self).__init__()
 
     def is_valid(self, id_string):
-        """It returns the validity of an issn.
-
-        Args:
-            id_string (str): the issn to validate
-
-        Returns:
-            bool: true if the issn is valid, false otherwise.
-        """
         issn = self.normalise(id_string)
-        return (
-            issn is not None
-            and self.check_digit(issn)
-        )
+        if issn is None:
+            return False
+        else:
+            if issn not in self._data or self._data[issn] is None:
+                return (
+                    self.syntax_ok(issn)
+                    and self.check_digit(issn)
+                )
+            return self._data[issn].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-        """It normalizes the ISSN.
-
-        Args:
-            id_string (str): the issn to normalize.
-            include_prefix (bool, optional): indicates if include the prefix. Defaults to False.
-
-        Returns:
-            str: the normalized issn
-        """
         try:
             issn_string = sub("[^X0-9]", "", id_string.upper())
             return "%s%s-%s" % (
@@ -62,24 +50,18 @@ class ISSNManager(IdentifierManager):
         except:  # Any error in processing the ISSN will return None
             return None
 
+    def syntax_ok(self, id_string):
+        if not id_string.startswith(self._p):
+            id_string = self._p+id_string
+        return True if match("^issn:[0-9]{4}-[0-9]{3}[0-9X]$", id_string, re.IGNORECASE) else False
+
     def check_digit(self,issn):
-        """Returns True, if ISSN (of length 8 or 9) is valid according to issn syntax (this does not mean registered).
-
-        Args:
-            issn (str): the issn to check
-
-        Returns:
-            bool: true if issn is valid, false otherwise
-        """
-        if match("^[0-9]{4}-[0-9]{3}[0-9X]$", issn):
-            issn = issn.replace("-", "")
-            if len(issn) != 8:
-                return False
-            ss = sum([int(digit) * f for digit, f in zip(issn, range(8, 1, -1))])
-            _, mod = divmod(ss, 11)
-            checkdigit = 0 if mod == 0 else 11 - mod
-            if checkdigit == 10:
-                checkdigit = "X"
-            return "{}".format(checkdigit) == issn[7]
-        else:
-            return False
+        issn = issn.replace('-', '')
+        if len(issn) != 8:
+            raise ValueError('ISSN of len 8 or 9 required (e.g. 00000949 or 0000-0949)')
+        ss = sum([int(digit) * f for digit, f in zip(issn, range(8, 1, -1))])
+        _, mod = divmod(ss, 11)
+        checkdigit = 0 if mod == 0 else 11 - mod
+        if checkdigit == 10:
+            checkdigit = 'X'
+        return '{}'.format(checkdigit) == issn[7]

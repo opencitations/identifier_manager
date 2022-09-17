@@ -38,33 +38,16 @@ class PMIDManager(IdentifierManager):
         self._data = data
 
     def is_valid(self, pmid):
-        """Check if a pmid is valid.
-
-        Args:
-            id_string (str): the pmid to check
-
-        Returns:
-            bool: true if the pmid is valid, false otherwise.
-        """
         pmid = self.normalise(pmid, include_prefix=True)
 
-        if pmid is None or not self.check_digit(pmid):
+        if pmid is None:
             return False
         else:
             if not pmid in self._data or self._data[pmid] is None:
-                return self.exists(pmid)
+                return self.exists(pmid) and self.syntax_ok(pmid)
             return self._data[pmid].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-        """It returns the pmid normalized.
-
-        Args:
-            id_string (str): the pmid to normalize.
-            include_prefix (bool, optional): indicates if include the prefix. Defaults to False.
-
-        Returns:
-            str: the normalized pmid
-        """
         id_string = str(id_string)
         try:
             pmid_string = sub("^0+", "", sub("\0+", "", (sub("[^\d+]", "", id_string))))
@@ -74,28 +57,12 @@ class PMIDManager(IdentifierManager):
             return None
 
     def check_digit(self, id_string):
-        """Returns True, if string format is valid (this does not mean registered).
-
-        Args:
-            id_string (str): the pmid string to check
-
-        Returns:
-            bool: true if the pmid string is formally correct (according to the pmid syntax)
-        """
-        if not id_string.startswith("pmid:"):
-            id_string = "pmid:"+id_string
+        if not id_string.startswith(self._p):
+            id_string = self._p+id_string
         return True if match("^pmid:[1-9]\d*$", id_string) else False
 
 
     def exists(self, pmid_full):
-        """
-        Returns True if the id exists, False otherwise. Not all child class check id existence because of API policies
-        Args:
-            pmid_full (str): the pmid string for the api request
-        Returns:
-            bool: True if the pmid exists (is registered), False otherwise.
-        """
-
         if self._use_api_service:
             pmid = self.normalise(pmid_full)
             if pmid is not None:
