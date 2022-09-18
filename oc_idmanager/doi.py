@@ -61,7 +61,7 @@ class DOIManager(IdentifierManager):
     def syntax_ok(self, id_string):
         if not id_string.startswith(self._p):
             id_string = self._p+id_string
-        return True if match("^doi:10\.(\d{4,9}|[^\s/]+(\.[^\s/]+)*)/[^\s/]+$", id_string, re.IGNORECASE) else False
+        return True if match("^doi:10\.(\d{4,9}|[^\s/]+(\.[^\s/]+)*)/[^\s]+$", id_string, re.IGNORECASE) else False
 
     def exists(self, doi_full):
         if self._use_api_service:
