@@ -37,66 +37,39 @@ class WikidataManager(IdentifierManager):
         self._data = data
 
     def is_valid(self, wikidata_id):
-        """Check if a wikidata ID is valid.
 
-        Args:
-            wikidata_id (str): the wikidata ID to check
-
-        Returns:
-            bool: true if the wikidata ID is valid, false otherwise.
-        """
         wikidata_id = self.normalise(wikidata_id, include_prefix=True)
 
-        if wikidata_id is None or not self.check_digit(wikidata_id):  #metodo is_valid e check_digits sono la stessa cosa ai fini della validazione, no? ha senso tenerli separati?
+        if wikidata_id is None or not self.syntax_ok(wikidata_id):
             return False
         else:
             if not wikidata_id in self._data or self._data[wikidata_id] is None:
-                return self.exists(wikidata_id)  # separa metodo exists: is_valid deve ritornare un boolean
+                return self.exists(wikidata_id)
             return self._data[wikidata_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-        """It returns the wikidata ID normalized.
 
-        Args:
-            id_string (str): the wikidata ID to normalize.
-            include_prefix (bool, optional): indicates if include the prefix. Defaults to False.
-
-        Returns:
-            str: the normalized wikidata ID
-        """
+        id_string = id_string.upper()
         try:
-            doi_string = sub(
-                "\0+", "", sub("\s+", "", unquote(id_string[id_string.index("10.") :]))
+            wikidata_string = sub(
+                "\0+", "", sub("\s+", "", unquote(id_string[id_string.index("Q"):]))
             )
             return "%s%s" % (
                 self._p if include_prefix else "",
-                doi_string.lower().strip(),
+                wikidata_string.strip(),
             )
         except:
             # Any error in processing the DOI will return None
             return None
 
-    def check_digit(self, id_string):
-        """Returns True, if string format is valid (this does not mean registered).
+    def syntax_ok(self, id_string):
 
-        Args:
-            id_string (str): the wikidata ID string to check
-
-        Returns:
-            bool: true if the wikidata_id string is formally correct (according to the wikidata_id syntax)
-        """
         if not id_string.startswith("wikidata:"):
             id_string = "wikidata:"+id_string
         return True if match("^wikidata:Q[1-9]\\d*$", id_string) else False
 
     def exists(self, wikidata_id_full):
-        """
-        Returns True if the wikidata_id exists, False otherwise.
-        Args:
-            wikidata_id_full (str): the wikidata_id string for the api request
-        Returns:
-            bool: True if the wikidata_id exists (is registered), False otherwise.
-        """
+
         if self._use_api_service:
             wikidata_id = self.normalise(wikidata_id_full)
             if wikidata_id is not None:
@@ -108,7 +81,9 @@ class WikidataManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
-                            return json_res.get("responseCode") == 1
+                            return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
+                        elif 400 <= r.status_code < 500:
+                            return False
                     except ReadTimeout:
                         # Do nothing, just try again
                         pass

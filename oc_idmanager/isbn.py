@@ -83,7 +83,7 @@ class ISBNManager(IdentifierManager):
         if len(id_string) - len(self._p) == 13:
             return True if match("^isbn:97[89][0-9X]{10}$", id_string, re.IGNORECASE) else False
         elif len(id_string) - len(self._p) == 10:
-            return True if match ("^isbn:[0-9X]{10}$", id_string, re.IGNORECASE) else False
+            return True if match("^isbn:[0-9X]{10}$", id_string, re.IGNORECASE) else False
         else:
             return False
 
