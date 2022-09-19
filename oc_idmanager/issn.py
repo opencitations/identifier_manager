@@ -28,7 +28,7 @@ class ISSNManager(IdentifierManager):
         super(ISSNManager, self).__init__()
 
     def is_valid(self, id_string):
-        issn = self.normalise(id_string)
+        issn = self.normalise(id_string, include_prefix=True)
         if issn is None:
             return False
         else:
@@ -56,6 +56,9 @@ class ISSNManager(IdentifierManager):
         return True if match("^issn:[0-9]{4}-[0-9]{3}[0-9X]$", id_string, re.IGNORECASE) else False
 
     def check_digit(self,issn):
+        if issn.startswith(self._p):
+            spl = issn.find(self._p) + len(self._p)
+            issn = issn[spl:]
         issn = issn.replace('-', '')
         if len(issn) != 8:
             raise ValueError('ISSN of len 8 or 9 required (e.g. 00000949 or 0000-0949)')
