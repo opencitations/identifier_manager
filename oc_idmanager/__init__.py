@@ -20,3 +20,4 @@ from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.orcid import ORCIDManager
 from oc_idmanager.pmid import PMIDManager
+from oc_idmanager.wikidata import WikidataManager

@@ -62,6 +62,11 @@ class IdentifierManagerTest(unittest.TestCase):
         self.invalid_isbn_1 = "0-19-850000-6"
         self.invalid_isbn_2 = "978-3-16-148410-99"
 
+        self.valid_wikidata_1 = "Q34433"
+        self.valid_wikidata_2 = "Q24698708"
+        self.valid_wikidata_3 = "Q15767074"
+        self.invalid_wikidata_1 = "Q34433Q345"
+        self.invalid_wikidata_3 = "Q12"  # not existing yet
 
     def test_doi_normalise(self):
         dm = DOIManager()
@@ -156,7 +161,6 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_issn_2, include_prefix=True))))
         self.assertFalse(im_file.is_valid((im_file.normalise(self.invalid_issn_2, include_prefix=True))))
 
-
     def test_orcid_normalise(self):
         om = ORCIDManager()
         self.assertEqual(
@@ -217,3 +221,38 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_1, include_prefix=True))))
         self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_2, include_prefix=True))))
         self.assertFalse(im_file.is_valid((im_file.normalise(self.invalid_isbn_2, include_prefix=True))))
+
+    def test_wikidata_normalise(self):
+        wdm = WikidataManager()
+        self.assertTrue(
+            self.valid_wikidata_1,
+            wdm.normalise(self.valid_wikidata_1.replace("Q", "https://www.wikidata.org/wiki/Q"))
+        )
+        self.assertTrue(
+            self.valid_wikidata_2,
+            wdm.normalise(self.valid_wikidata_2)
+        )
+        self.assertTrue(
+            self.valid_wikidata_2,
+            wdm.normalise(self.valid_wikidata_2.replace("Q", "wikidata: Q"))
+        )
+        self.assertTrue(
+            self.valid_wikidata_3,
+            wdm.normalise((self.valid_wikidata_3.replace("Q", "Q ")))
+        )
+
+    def test_wikidata_is_valid(self):
+        wdm = WikidataManager()
+        self.assertTrue(wdm.is_valid(self.valid_wikidata_1))
+        self.assertTrue(wdm.is_valid(self.valid_wikidata_2))
+        self.assertTrue(wdm.is_valid(self.valid_wikidata_3))
+        self.assertFalse(wdm.is_valid(self.invalid_wikidata_1))
+        self.assertFalse(wdm.is_valid(self.invalid_wikidata_3))
+        wdm_file = WikidataManager(self.data)
+        self.assertTrue(wdm_file.normalise(self.valid_wikidata_1, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.normalise(self.valid_wikidata_2, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.normalise(self.invalid_wikidata_3, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikidata_1, include_prefix=True))))
+        self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikidata_2, include_prefix=True))))
+        self.assertFalse(wdm_file.is_valid((wdm_file.normalise(self.invalid_wikidata_3, include_prefix=True))))
+

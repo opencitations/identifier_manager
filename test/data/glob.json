@@ -91,6 +91,12 @@
 
     "isbn:9783161484100": {"valid": true},
 
-    "isbn:97831614841099": {"valid": false}
+    "isbn:97831614841099": {"valid": false},
+
+    "wikidata:Q34433": {"valid": true},
+
+    "wikidata:Q24698708": {"valid": true},
+
+    "wikidata:Q12": {"valid": false}
 
 }
