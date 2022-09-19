@@ -29,7 +29,7 @@ class ISBNManager(IdentifierManager):
         super(ISBNManager, self).__init__()
 
     def is_valid(self, id_string):
-        isbn = self.normalise(id_string)
+        isbn = self.normalise(id_string, include_prefix=True)
         if isbn is None:
             return False
         else:
@@ -41,14 +41,17 @@ class ISBNManager(IdentifierManager):
             return self._data[isbn].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
         try:
             isbn_string = sub("[^X0-9]", "", id_string.upper())
-            return "%s%s" % (self.p if include_prefix else "", isbn_string)
+            return "%s%s" % (self._p if include_prefix else "", isbn_string)
         except:  # Any error in processing the ISBN will return None
             return None
 
     def check_digit(self, isbn):
+        if isbn.startswith(self._p):
+            spl = isbn.find(self._p) + len(self._p)
+            isbn = isbn[spl:]
+
         isbn = isbn.replace("-", "")
         isbn = isbn.replace(" ", "")
         check_digit = False

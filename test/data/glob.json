@@ -76,5 +76,21 @@
         "valid": true,
         "issn": ["0046-9580", "1945-7243"],
         "orcid": ["0000-0001-8403-9735"]
-    }
+    },
+    "issn:2376-5992": {"valid": true},
+
+    "issn:1474-175X": {"valid": true},
+
+    "issn:2376-5995": {"valid": false},
+
+    "orcid:0000-0003-0530-4305": {"valid": true},
+
+    "orcid:0000-0001-5506-523X": {"valid": true},
+
+    "isbn:9780134093413": {"valid": true},
+
+    "isbn:9783161484100": {"valid": true},
+
+    "isbn:97831614841099": {"valid": false}
+
 }

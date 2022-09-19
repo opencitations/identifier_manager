@@ -88,6 +88,8 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertFalse(dm_nofile.is_valid(self.invalid_doi_2))
 
         dm_file = DOIManager(self.data, use_api_service=False)
+        self.assertTrue(dm_file.normalise(self.valid_doi_1, include_prefix=True) in self.data)
+        self.assertTrue(dm_file.normalise(self.invalid_doi_1, include_prefix=True) in self.data)
         self.assertTrue(dm_file.is_valid(self.valid_doi_1))
         self.assertFalse(dm_file.is_valid(self.invalid_doi_1))
 
@@ -117,6 +119,8 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertFalse(pm_nofile.is_valid(self.invalid_pmid_2))
 
         pm_file = PMIDManager(self.data, use_api_service=False)
+        self.assertTrue(pm_file.normalise(self.valid_pmid_1, include_prefix=True) in self.data)
+        self.assertTrue(pm_file.normalise(self.invalid_pmid_1, include_prefix=True) in self.data)
         self.assertTrue(pm_file.is_valid(self.valid_pmid_1))
         self.assertFalse(pm_file.is_valid(self.invalid_pmid_1))
 
@@ -144,6 +148,15 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertFalse(im.is_valid(self.invalid_issn_2))
         self.assertFalse(im.is_valid(self.invalid_issn_3))
 
+        im_file = ISSNManager(self.data)
+        self.assertTrue(im_file.normalise(self.valid_issn_1, include_prefix=True) in self.data)
+        self.assertTrue(im_file.normalise(self.valid_issn_2, include_prefix=True) in self.data)
+        self.assertTrue(im_file.normalise(self.invalid_issn_2, include_prefix=True) in self.data)
+        self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_issn_1, include_prefix=True))))
+        self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_issn_2, include_prefix=True))))
+        self.assertFalse(im_file.is_valid((im_file.normalise(self.invalid_issn_2, include_prefix=True))))
+
+
     def test_orcid_normalise(self):
         om = ORCIDManager()
         self.assertEqual(
@@ -168,6 +181,16 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertFalse(om.is_valid(self.invalid_orcid_3))
         self.assertFalse(om.is_valid(self.invalid_orcid_4))
 
+        om_file = ORCIDManager(self.data, use_api_service=False)
+        self.assertTrue(om_file.normalise(self.valid_orcid_1, include_prefix=True) in self.data)
+        self.assertTrue(om_file.normalise(self.valid_orcid_2, include_prefix=True) in self.data)
+        self.assertTrue(om_file.is_valid(om_file.normalise(self.valid_orcid_1, include_prefix=True)))
+        self.assertTrue(om_file.is_valid(om_file.normalise(self.valid_orcid_2, include_prefix=True)))
+
+        om_nofile_noapi = ORCIDManager(use_api_service=False)
+        self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_1))
+        self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_2))
+
     def test_isbn_normalise(self):
         im = ISBNManager()
         self.assertEqual(
@@ -187,3 +210,10 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(im.is_valid(self.valid_isbn_3))
         self.assertFalse(im.is_valid(self.invalid_isbn_2))
         self.assertFalse(im.is_valid(self.invalid_isbn_1))
+        im_file = ISBNManager(self.data)
+        self.assertTrue(im_file.normalise(self.valid_isbn_1, include_prefix=True) in self.data)
+        self.assertTrue(im_file.normalise(self.valid_isbn_2, include_prefix=True) in self.data)
+        self.assertTrue(im_file.normalise(self.invalid_isbn_2, include_prefix=True) in self.data)
+        self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_1, include_prefix=True))))
+        self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_2, include_prefix=True))))
+        self.assertFalse(im_file.is_valid((im_file.normalise(self.invalid_isbn_2, include_prefix=True))))

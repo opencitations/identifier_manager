@@ -37,7 +37,7 @@ class ORCIDManager(IdentifierManager):
         self._data = data
 
     def is_valid(self, id_string):
-        orcid = self.normalise(id_string)
+        orcid = self.normalise(id_string, include_prefix=True)
         if orcid is None:
             return False
         else:
@@ -63,6 +63,9 @@ class ORCIDManager(IdentifierManager):
             return None
 
     def check_digit(self, orcid):
+        if orcid.startswith(self._p):
+            spl = orcid.find(self._p) + len(self._p)
+            orcid = orcid[spl:]
         total = 0
         for d in sub("[^X0-9]", "", orcid.upper())[:-1]:
             i = 10 if d == "X" else int(d)
