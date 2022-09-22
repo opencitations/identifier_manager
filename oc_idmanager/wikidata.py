@@ -36,7 +36,7 @@ class WikidataManager(IdentifierManager):
         self._p = "wikidata:"
         self._data = data
 
-    def is_valid(self, wikidata_id):
+    def is_valid(self, wikidata_id, get_extra_info=False):
 
         wikidata_id = self.normalise(wikidata_id, include_prefix=True)
 
@@ -68,7 +68,7 @@ class WikidataManager(IdentifierManager):
             id_string = "wikidata:"+id_string
         return True if match("^wikidata:Q[1-9]\\d*$", id_string) else False
 
-    def exists(self, wikidata_id_full):
+    def exists(self, wikidata_id_full, get_extra_info=False):
 
         if self._use_api_service:
             wikidata_id = self.normalise(wikidata_id_full)
@@ -94,3 +94,7 @@ class WikidataManager(IdentifierManager):
                 return False
 
         return False
+
+    def extra_info(self, api_response):
+        result = {}
+        return result

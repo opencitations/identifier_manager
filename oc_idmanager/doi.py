@@ -35,14 +35,19 @@ class DOIManager(IdentifierManager):
         self._p = "doi:"
         self._data = data
 
-    def is_valid(self, id_string):
+    def is_valid(self, id_string, get_extra_info=False):
         doi = self.normalise(id_string, include_prefix=True)
 
         if doi is None:
             return False
         else:
             if doi not in self._data or self._data[doi] is None:
+                if get_extra_info:
+                    info = self.exists(doi, get_extra_info=True)
+                    return (info[0] and self.syntax_ok(doi)), info[1]
                 return self.exists(doi) and self.syntax_ok(doi)
+            if get_extra_info:
+                return self._data[doi].get("valid"), self._data[doi]
             return self._data[doi].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
@@ -63,7 +68,7 @@ class DOIManager(IdentifierManager):
             id_string = self._p+id_string
         return True if match("^doi:10\.(\d{4,9}|[^\s/]+(\.[^\s/]+)*)/[^\s]+$", id_string, re.IGNORECASE) else False
 
-    def exists(self, doi_full):
+    def exists(self, doi_full, get_extra_info=False):
         if self._use_api_service:
             doi = self.normalise(doi_full)
             if doi is not None:
@@ -75,6 +80,8 @@ class DOIManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
+                            if get_extra_info:
+                                return json_res.get("responseCode") == 1, self.extra_info(json_res)
                             return json_res.get("responseCode") == 1
                     except ReadTimeout:
                         # Do nothing, just try again
@@ -83,6 +90,16 @@ class DOIManager(IdentifierManager):
                         # Sleep 5 seconds, then try again
                         sleep(5)
             else:
+                if get_extra_info:
+                    return False, {"valid": False}
                 return False
 
+        if get_extra_info:
+            return False, {"valid": False}
         return False
+
+    def extra_info(self, api_response):
+        result = {}
+        result["valid"] = api_response.get("responseCode") == 1
+        # import crossref and datacite resource finder for extra info
+        return result

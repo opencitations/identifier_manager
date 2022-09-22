@@ -33,13 +33,16 @@ class IdentifierManager(metaclass=ABCMeta):
             "(http://opencitations.net; mailto:contact@opencitations.net)"
         }
 
-    def is_valid(self, id_string):
+    def is_valid(self, id_string, get_extra_info=False):
         """Returns true if the id is valid, false otherwise.
 
         Args:
             id_string (str): id to check
+            get_extra_info (bool): True to get a dictionary with additional info about the id
         Returns:
             bool: True if the id is valid, False otherwise.
+            dict : a dictionary with additional information, if required (get_extra_info=True)
+
         """
         return True
 
@@ -76,14 +79,27 @@ class IdentifierManager(metaclass=ABCMeta):
         """
         return True
 
-    def exists(self, id_string):
+    def exists(self, id_string, get_extra_info=False):
         """  Returns True if the id exists, False otherwise.
         Not all child classes check id existence because of API policies
 
         Args:
             id_string (str): the id string for the api request
+            get_extra_info (bool): True to get a dictionary with additional info about the id
+
         Returns:
             bool: True if the id exists (is registered), False otherwise.
+            dict : a dictionary with additional information, if required
         """
         return True
 
+    def extra_info(self, api_response):
+        """  Returns a dictionary with extra info about the id, if available.
+        Not all child classes check id existence because of API policies
+
+        Args:
+            api_response (json or string): the api response of the api request
+        Returns:
+            dict: A dictionary with additional information about the id, if provided by the API.
+        """
+        return {}

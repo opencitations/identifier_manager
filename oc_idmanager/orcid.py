@@ -36,7 +36,7 @@ class ORCIDManager(IdentifierManager):
         self._p = "orcid:"
         self._data = data
 
-    def is_valid(self, id_string):
+    def is_valid(self, id_string, get_extra_info=False):
         orcid = self.normalise(id_string, include_prefix=True)
         if orcid is None:
             return False
@@ -80,7 +80,7 @@ class ORCIDManager(IdentifierManager):
         return True if match("^orcid:([0-9]{4}-){3}[0-9]{3}[0-9X]$", id_string, re.IGNORECASE) else False
 
 
-    def exists(self, orcid):
+    def exists(self, orcid, get_extra_info=False):
         if self._use_api_service:
             self._headers["Accept"] = "application/json"
             orcid = self.normalise(orcid)
@@ -103,3 +103,7 @@ class ORCIDManager(IdentifierManager):
             else:
                 return False
         return False
+
+    def extra_info(self, api_response):
+        result = {}
+        return result

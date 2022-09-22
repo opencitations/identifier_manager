@@ -36,7 +36,7 @@ class WikipediaManager(IdentifierManager):
         self._p = "wikipedia:"
         self._data = data
 
-    def is_valid(self, wikipedia_id):
+    def is_valid(self, wikipedia_id, get_extra_info=False):
 
         wikipedia_id = self.normalise(wikipedia_id, include_prefix=True)
 
@@ -74,7 +74,7 @@ class WikipediaManager(IdentifierManager):
             id_string = "wikipedia:" + id_string
         return True if match("^wikipedia:\\.*$", id_string) else False # definisci regex più precisa!!
 
-    def exists(self, wikipedia_id_full):
+    def exists(self, wikipedia_id_full, get_extra_info=False):
 
         # -------------------------------------controlla
 
@@ -114,3 +114,7 @@ class WikipediaManager(IdentifierManager):
                 return False
 
         return False
+
+    def extra_info(self, api_response):
+        result = {}
+        return result

@@ -28,7 +28,7 @@ class ISBNManager(IdentifierManager):
         self._data = data
         super(ISBNManager, self).__init__()
 
-    def is_valid(self, id_string):
+    def is_valid(self, id_string, get_extra_info=False):
         isbn = self.normalise(id_string, include_prefix=True)
         if isbn is None:
             return False

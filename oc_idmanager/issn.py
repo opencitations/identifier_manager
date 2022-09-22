@@ -27,7 +27,7 @@ class ISSNManager(IdentifierManager):
         self._data = data
         super(ISSNManager, self).__init__()
 
-    def is_valid(self, id_string):
+    def is_valid(self, id_string, get_extra_info=False):
         issn = self.normalise(id_string, include_prefix=True)
         if issn is None:
             return False
