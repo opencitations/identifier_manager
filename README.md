@@ -1,4 +1,4 @@
-# oc_id_manager
+# oc_idmanager
 Repository collecting OpenCitations Identifier Managers
 
 
