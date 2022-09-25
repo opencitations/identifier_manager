@@ -1,5 +1,5 @@
 [<img src="https://img.shields.io/badge/powered%20by-OpenCitations-%239931FC?labelColor=2D22DE" />](http://opencitations.net)
-[![run_tests](https://github.com/opencitations/identifier_manager/actions/workflows/run_tests.yml/badge.svg)](https://github.com/opencitations/identifier_manager/actions/workflows/run_tests.yml)
+[![run_tests](https://github.com/opencitations/identifier_manager/actions/workflows/run_tests.yaml/badge.svg)](https://github.com/opencitations/identifier_manager/actions/workflows/run_tests.yaml)
 ![Coverage](https://raw.githubusercontent.com/opencitations/identifier_manager/main/test/coverage/coverage.svg)
 ![PyPI](https://img.shields.io/pypi/pyversions/oc_idmanager)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/opencitations/identifier_manager)
