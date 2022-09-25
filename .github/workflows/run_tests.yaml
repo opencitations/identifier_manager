@@ -29,11 +29,12 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
     steps:
-    - name: Install dependencies
-      uses: actions/checkout@v3.0.2
+    - uses: actions/checkout@v3.0.2
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
       run: poetry install
     - name: Check the overage
       run: poetry run coverage run --rcfile=test/coverage/.coveragerc
