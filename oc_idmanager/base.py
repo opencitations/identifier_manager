@@ -38,7 +38,7 @@ class IdentifierManager(metaclass=ABCMeta):
 
         Args:
             id_string (str): id to check
-            get_extra_info (bool): True to get a dictionary with additional info about the id
+            get_extra_info (bool, optional): True to get a dictionary with additional info about the id
         Returns:
             bool: True if the id is valid, False otherwise.
             dict : a dictionary with additional information, if required (get_extra_info=True)
@@ -85,7 +85,7 @@ class IdentifierManager(metaclass=ABCMeta):
 
         Args:
             id_string (str): the id string for the api request
-            get_extra_info (bool): True to get a dictionary with additional info about the id
+            get_extra_info (bool, optional): True to get a dictionary with additional info about the id
 
         Returns:
             bool: True if the id exists (is registered), False otherwise.

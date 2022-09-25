@@ -117,4 +117,5 @@ class WikipediaManager(IdentifierManager):
 
     def extra_info(self, api_response):
         result = {}
+        # to be implemented
         return result

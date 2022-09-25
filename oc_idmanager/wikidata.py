@@ -81,6 +81,9 @@ class WikidataManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
+                            if get_extra_info:
+                                return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(
+                                    wikidata_id) else False, self.extra_info(json_res)
                             return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
                         elif 400 <= r.status_code < 500:
                             return False
@@ -91,10 +94,15 @@ class WikidataManager(IdentifierManager):
                         # Sleep 5 seconds, then try again
                         sleep(5)
             else:
+                if get_extra_info:
+                    return False, {}
                 return False
 
+        if get_extra_info:
+            return False, {}
         return False
 
     def extra_info(self, api_response):
         result = {}
+        # to be implemented
         return result
