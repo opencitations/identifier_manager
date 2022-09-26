@@ -94,15 +94,23 @@ class WikipediaManager(IdentifierManager):
                 while tentative:
                     tentative -= 1
                     try:
+                        # TO GET BASIC (STRUCTURED) INFO ABOUT THE PAGE
                         query_params = {
                             "action": "query",
-                            #"prop": "info",
-                            "titles": wikipedia_id,
-                            #"pageids" : wikipedia_id, #-----------sistema
+                            "prop": "info",
+                            "titles": wikipedia_id, # use this if the id input by the user is the page TITLE
+                            #"pageids" : wikipedia_id, # use this if the id input by the user is the PAGE ID
                             "format": "json",
                         }
+
+                        # # TO GET FULL (PARSED) CONTENT OF THE PAGE
+                        # query_params = {
+                        #     "action": "parse",
+                        #     "page": wikipedia_id, # use this if the id input by the user is the page TITLE
+                        #     #"pageid" : wikipedia_id, # use this if the id input by the user is the PAGE ID
+                        #     "format": "json",
+                        # }
                         r = get(self._api, params=query_params, headers=self._headers, timeout=30) # controlla
-                        print(r)
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
