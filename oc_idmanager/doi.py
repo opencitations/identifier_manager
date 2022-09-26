@@ -44,7 +44,10 @@ class DOIManager(IdentifierManager):
             if doi not in self._data or self._data[doi] is None:
                 if get_extra_info:
                     info = self.exists(doi, get_extra_info=True)
+                    self._data[doi] = info[1]
                     return (info[0] and self.syntax_ok(doi)), info[1]
+                self._data[doi] = dict()
+                self._data[doi]["valid"] = True if self.exists(doi) and self.syntax_ok(doi) else False
                 return self.exists(doi) and self.syntax_ok(doi)
             if get_extra_info:
                 return self._data[doi].get("valid"), self._data[doi]
@@ -80,9 +83,10 @@ class DOIManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
+                            valid_bool = json_res.get("responseCode") == 1
                             if get_extra_info:
-                                return json_res.get("responseCode") == 1, self.extra_info(json_res)
-                            return json_res.get("responseCode") == 1
+                                return valid_bool, self.extra_info(json_res)
+                            return valid_bool
                     except ReadTimeout:
                         # Do nothing, just try again
                         pass
@@ -100,6 +104,6 @@ class DOIManager(IdentifierManager):
 
     def extra_info(self, api_response):
         result = {}
-        result["valid"] = api_response.get("responseCode") == 1
+        result["valid"] = True
         # import crossref and datacite resource finder for extra info
         return result

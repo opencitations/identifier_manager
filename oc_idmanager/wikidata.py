@@ -37,14 +37,21 @@ class WikidataManager(IdentifierManager):
         self._data = data
 
     def is_valid(self, wikidata_id, get_extra_info=False):
-
         wikidata_id = self.normalise(wikidata_id, include_prefix=True)
 
         if wikidata_id is None or not self.syntax_ok(wikidata_id):
             return False
         else:
-            if not wikidata_id in self._data or self._data[wikidata_id] is None:
-                return self.exists(wikidata_id)
+            if wikidata_id not in self._data or self._data[wikidata_id] is None:
+                if get_extra_info:
+                    info = self.exists(wikidata_id, get_extra_info=True)
+                    self._data[wikidata_id] = info[1]
+                    return (info[0] and self.syntax_ok(wikidata_id)), info[1]
+                self._data[wikidata_id] = dict()
+                self._data[wikidata_id]["valid"] = True if self.exists(wikidata_id) and self.syntax_ok(wikidata_id) else False
+                return self.exists(wikidata_id) and self.syntax_ok(wikidata_id)
+            if get_extra_info:
+                return self._data[wikidata_id].get("valid"), self._data[wikidata_id]
             return self._data[wikidata_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
@@ -86,6 +93,8 @@ class WikidataManager(IdentifierManager):
                                     wikidata_id) else False, self.extra_info(json_res)
                             return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
                         elif 400 <= r.status_code < 500:
+                            if get_extra_info:
+                                return False, {"valid": False}
                             return False
                     except ReadTimeout:
                         # Do nothing, just try again
@@ -95,14 +104,15 @@ class WikidataManager(IdentifierManager):
                         sleep(5)
             else:
                 if get_extra_info:
-                    return False, {}
+                    return False, {"valid": False}
                 return False
 
         if get_extra_info:
-            return False, {}
+            return False, {"valid": False}
         return False
 
     def extra_info(self, api_response):
         result = {}
+        result["valid"] = True
         # to be implemented
         return result

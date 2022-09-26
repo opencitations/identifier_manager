@@ -102,4 +102,4 @@ class IdentifierManager(metaclass=ABCMeta):
         Returns:
             dict: A dictionary with additional information about the id, if provided by the API.
         """
-        return {}
+        return {"value": True}

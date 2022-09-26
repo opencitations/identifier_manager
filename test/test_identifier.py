@@ -98,7 +98,8 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(dm_file.is_valid(self.valid_doi_1))
         self.assertFalse(dm_file.is_valid(self.invalid_doi_1))
 
-        dm_nofile_noapi = DOIManager(use_api_service=False)
+        clean_data = {}
+        dm_nofile_noapi = DOIManager(clean_data, use_api_service=False)
         self.assertFalse(dm_nofile_noapi.is_valid(self.valid_doi_1))
         self.assertFalse(dm_nofile_noapi.is_valid(self.invalid_doi_1))
 
@@ -129,7 +130,8 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(pm_file.is_valid(self.valid_pmid_1))
         self.assertFalse(pm_file.is_valid(self.invalid_pmid_1))
 
-        pm_nofile_noapi = PMIDManager(use_api_service=False)
+        clean_data = {}
+        pm_nofile_noapi = PMIDManager(clean_data, use_api_service=False)
         self.assertFalse(pm_nofile_noapi.is_valid(self.valid_pmid_1))
         self.assertFalse(pm_nofile_noapi.is_valid(self.invalid_pmid_1))
 
@@ -191,7 +193,8 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(om_file.is_valid(om_file.normalise(self.valid_orcid_1, include_prefix=True)))
         self.assertTrue(om_file.is_valid(om_file.normalise(self.valid_orcid_2, include_prefix=True)))
 
-        om_nofile_noapi = ORCIDManager(use_api_service=False)
+        clean_data = {}
+        om_nofile_noapi = ORCIDManager(clean_data, use_api_service=False)
         self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_1))
         self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_2))
 
@@ -214,6 +217,7 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(im.is_valid(self.valid_isbn_3))
         self.assertFalse(im.is_valid(self.invalid_isbn_2))
         self.assertFalse(im.is_valid(self.invalid_isbn_1))
+
         im_file = ISBNManager(self.data)
         self.assertTrue(im_file.normalise(self.valid_isbn_1, include_prefix=True) in self.data)
         self.assertTrue(im_file.normalise(self.valid_isbn_2, include_prefix=True) in self.data)
@@ -248,6 +252,7 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(wdm.is_valid(self.valid_wikidata_3))
         self.assertFalse(wdm.is_valid(self.invalid_wikidata_1))
         self.assertFalse(wdm.is_valid(self.invalid_wikidata_3))
+
         wdm_file = WikidataManager(self.data)
         self.assertTrue(wdm_file.normalise(self.valid_wikidata_1, include_prefix=True) in self.data)
         self.assertTrue(wdm_file.normalise(self.valid_wikidata_2, include_prefix=True) in self.data)
@@ -255,4 +260,9 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikidata_1, include_prefix=True))))
         self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikidata_2, include_prefix=True))))
         self.assertFalse(wdm_file.is_valid((wdm_file.normalise(self.invalid_wikidata_3, include_prefix=True))))
+
+        clean_data = {}
+        wdm_nofile_noapi = WikidataManager(clean_data, use_api_service=False)
+        self.assertFalse(wdm_nofile_noapi.is_valid(self.valid_wikidata_1))
+        self.assertFalse(wdm_nofile_noapi.is_valid(self.valid_wikidata_2))
 

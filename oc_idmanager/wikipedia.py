@@ -44,7 +44,15 @@ class WikipediaManager(IdentifierManager):
             return False
         else:
             if wikipedia_id not in self._data or self._data[wikipedia_id] is None:
-                return self.exists(wikipedia_id)
+                if get_extra_info:
+                    info = self.exists(wikipedia_id, get_extra_info=True)
+                    self._data[wikipedia_id] = info[1]
+                    return (info[0] and self.syntax_ok(wikipedia_id)), info[1]
+                self._data[wikipedia_id] = dict()
+                self._data[wikipedia_id]["valid"] = True if self.exists(wikipedia_id) and self.syntax_ok(wikipedia_id) else False
+                return self.exists(wikipedia_id) and self.syntax_ok(wikipedia_id)
+            if get_extra_info:
+                return self._data[wikipedia_id].get("valid"), self._data[wikipedia_id]
             return self._data[wikipedia_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False): # da cambiare
@@ -98,11 +106,14 @@ class WikipediaManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
-                            # poi togli e sostituisci il return corretto (da scrivere)
-                            return json_res
-
+                            valid_bool = True # poi togli e sostituisci il return corretto (da scrivere condizioni per cui sia True)
+                            if get_extra_info:
+                                return valid_bool, self.extra_info(json_res)
+                            return valid_bool # poi togli e sostituisci il return corretto (da scrivere)
                             # return True if json_res['entities'][f"{wikipedia_id}"]['id'] == str(wikipedia_id) else False
                         elif 400 <= r.status_code < 500:
+                            if get_extra_info:
+                                return False, {"valid": False}
                             return False
                     except ReadTimeout:
                         # Do nothing, just try again
@@ -111,11 +122,16 @@ class WikipediaManager(IdentifierManager):
                         # Sleep 5 seconds, then try again
                         sleep(5)
             else:
+                if get_extra_info:
+                    return False, {"valid": False}
                 return False
 
+        if get_extra_info:
+            return False, {"valid": False}
         return False
 
     def extra_info(self, api_response):
         result = {}
+        result["valid"] = True
         # to be implemented
         return result

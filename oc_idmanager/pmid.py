@@ -48,8 +48,12 @@ class PMIDManager(IdentifierManager):
             if pmid not in self._data or self._data[pmid] is None:
                 if get_extra_info:
                     info = self.exists(pmid, get_extra_info=True)
+                    self._data[pmid] = info[1]
                     return (info[0] and self.syntax_ok(pmid)), info[1]
-                return self.exists(pmid) and self.syntax_ok(pmid)
+                self._data[pmid] = dict()
+                self._data[pmid]["valid"] = True if (self.exists(pmid) and self.syntax_ok(pmid)) else False
+                return self._data[pmid].get("valid")
+
             if get_extra_info:
                 return self._data[pmid].get("valid"), self._data[pmid]
             return self._data[pmid].get("valid")
@@ -99,20 +103,15 @@ class PMIDManager(IdentifierManager):
                         sleep(5)
             else:
                 if get_extra_info:
-                    return False, {}
+                    return False, {"valid": False}
                 return False
         if get_extra_info:
-            return False, {}
+            return False, {"valid": False}
         return False
 
     def extra_info(self, api_response):
         result = {}
-        try:
-            fa_pmid = re.findall("PMID-\s*[1-9]\d*", api_response)
-            valid = len(fa_pmid) > 0
-        except:
-            valid = False
-        result["valid"] = valid
+        result["valid"] = True
 
         try:
             title = ""

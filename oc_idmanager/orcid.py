@@ -42,11 +42,23 @@ class ORCIDManager(IdentifierManager):
             return False
         else:
             if orcid not in self._data or self._data[orcid] is None:
+                if get_extra_info:
+                    info = self.exists(orcid, get_extra_info=True)
+                    self._data[orcid] = info[1]
+                    return (info[0] and self.check_digit(orcid) and self.syntax_ok(orcid)), info[1]
+                self._data[orcid] = dict()
+                self._data[orcid]["valid"] = True if (
+                    self.syntax_ok(orcid)
+                    and self.check_digit(orcid)
+                    and self.exists(orcid)
+                ) else False
                 return (
                     self.syntax_ok(orcid)
                     and self.check_digit(orcid)
                     and self.exists(orcid)
                 )
+            if get_extra_info:
+                return self._data[orcid].get("valid"), self._data[orcid]
             return self._data[orcid].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
@@ -93,7 +105,10 @@ class ORCIDManager(IdentifierManager):
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
-                            return json_res.get("orcid-identifier").get("path") == orcid
+                            valid_bool = json_res.get("orcid-identifier").get("path") == orcid
+                            if get_extra_info:
+                                return valid_bool, self.extra_info(json_res)
+                            return valid_bool
                     except ReadTimeout:
                         # Do nothing, just try again
                         pass
@@ -101,9 +116,15 @@ class ORCIDManager(IdentifierManager):
                         # Sleep 5 seconds, then try again
                         sleep(5)
             else:
+                if get_extra_info:
+                    return False, {"valid": False}
                 return False
+        if get_extra_info:
+            return False, {"valid": False}
         return False
 
     def extra_info(self, api_response):
+        print("api response", api_response)
         result = {}
+        result["valid"] = True
         return result
