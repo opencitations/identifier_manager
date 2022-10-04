@@ -99,8 +99,8 @@ class DOIManager(IdentifierManager):
                 return False
 
         if get_extra_info:
-            return False, {"valid": False}
-        return False
+            return True, {"valid": True}
+        return True
 
     def extra_info(self, api_response):
         result = {}
