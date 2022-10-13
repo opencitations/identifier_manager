@@ -53,7 +53,9 @@ om_file_noapi = ORCIDManager(self.data, use_api_service=False)
 ```
 
 #### Class instantiation with API access disabled and no validation dictionary specified
-The validity of the id can't be verified: with these settings no information will be retrieved. 
+The validity of the id can't be verified: with these settings no information will be retrieved. However, we implemented 
+the check for existence so to have a positive behavior in case neither API can be used nor data dictionary is provided. 
+Indeed, an id will result existent if the "exists" method is called with the API-use parameter set to False.  
 ```console
 om_nofile_noapi = ORCIDManager(use_api_service=False)
 ```
@@ -62,7 +64,7 @@ om_nofile_noapi = ORCIDManager(use_api_service=False)
 ### Code Testing 
 Update the [`/test/test_identifier.py`](https://github.com/opencitations/identifier_manager/blob/main/test/test_identifier.py) file and run the following command to test the code
 ```console
-$ python -m unittest discover -s test -p "test/test_identifier.py"
+$ python -m unittest discover -s test -p "test_identifier.py"
 ```
 
 ### Notes 

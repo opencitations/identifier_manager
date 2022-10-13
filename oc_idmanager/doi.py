@@ -72,6 +72,7 @@ class DOIManager(IdentifierManager):
         return True if match("^doi:10\.(\d{4,9}|[^\s/]+(\.[^\s/]+)*)/[^\s]+$", id_string, re.IGNORECASE) else False
 
     def exists(self, doi_full, get_extra_info=False):
+        valid_bool = True
         if self._use_api_service:
             doi = self.normalise(doi_full)
             if doi is not None:
@@ -93,14 +94,15 @@ class DOIManager(IdentifierManager):
                     except ConnectionError:
                         # Sleep 5 seconds, then try again
                         sleep(5)
+                valid_bool = False
             else:
                 if get_extra_info:
                     return False, {"valid": False}
                 return False
 
         if get_extra_info:
-            return True, {"valid": True}
-        return True
+            return valid_bool, {"valid": valid_bool}
+        return valid_bool
 
     def extra_info(self, api_response):
         result = {}

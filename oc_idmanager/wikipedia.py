@@ -83,6 +83,7 @@ class WikipediaManager(IdentifierManager):
         return True if match("^wikipedia:\\.*$", id_string) else False # definisci regex più precisa!!
 
     def exists(self, wikipedia_id_full, get_extra_info=False):
+        valid_bool = True
 
         # -------------------------------------controlla
 
@@ -129,14 +130,15 @@ class WikipediaManager(IdentifierManager):
                     except ConnectionError:
                         # Sleep 5 seconds, then try again
                         sleep(5)
+                valid_bool=False
             else:
                 if get_extra_info:
                     return False, {"valid": False}
                 return False
 
         if get_extra_info:
-            return True, {"valid": True}
-        return True
+            return valid_bool, {"valid": valid_bool}
+        return valid_bool
 
     def extra_info(self, api_response):
         result = {}

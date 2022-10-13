@@ -100,8 +100,8 @@ class IdentifierManagerTest(unittest.TestCase):
 
         clean_data = {}
         dm_nofile_noapi = DOIManager(clean_data, use_api_service=False)
-        self.assertFalse(dm_nofile_noapi.is_valid(self.valid_doi_1))
-        self.assertFalse(dm_nofile_noapi.is_valid(self.invalid_doi_1))
+        self.assertTrue(dm_nofile_noapi.is_valid(self.valid_doi_1))
+        self.assertTrue(dm_nofile_noapi.is_valid(self.invalid_doi_1))
 
     def test_pmid_normalise(self):
         pm = PMIDManager()
@@ -132,8 +132,8 @@ class IdentifierManagerTest(unittest.TestCase):
 
         clean_data = {}
         pm_nofile_noapi = PMIDManager(clean_data, use_api_service=False)
-        self.assertFalse(pm_nofile_noapi.is_valid(self.valid_pmid_1))
-        self.assertFalse(pm_nofile_noapi.is_valid(self.invalid_pmid_1))
+        self.assertTrue(pm_nofile_noapi.is_valid(self.valid_pmid_1))
+        self.assertTrue(pm_nofile_noapi.is_valid(self.invalid_pmid_1))
 
     def test_issn_normalise(self):
         im = ISSNManager()
@@ -195,8 +195,8 @@ class IdentifierManagerTest(unittest.TestCase):
 
         clean_data = {}
         om_nofile_noapi = ORCIDManager(clean_data, use_api_service=False)
-        self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_1))
-        self.assertFalse(om_nofile_noapi.is_valid(self.valid_orcid_2))
+        self.assertTrue(om_nofile_noapi.is_valid(self.valid_orcid_1))
+        self.assertTrue(om_nofile_noapi.is_valid(self.valid_orcid_2))
 
     def test_isbn_normalise(self):
         im = ISBNManager()
@@ -263,6 +263,6 @@ class IdentifierManagerTest(unittest.TestCase):
 
         clean_data = {}
         wdm_nofile_noapi = WikidataManager(clean_data, use_api_service=False)
-        self.assertFalse(wdm_nofile_noapi.is_valid(self.valid_wikidata_1))
-        self.assertFalse(wdm_nofile_noapi.is_valid(self.valid_wikidata_2))
+        self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikidata_1))
+        self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikidata_2))
 

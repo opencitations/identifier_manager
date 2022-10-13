@@ -76,7 +76,7 @@ class WikidataManager(IdentifierManager):
         return True if match("^wikidata:Q[1-9]\\d*$", id_string) else False
 
     def exists(self, wikidata_id_full, get_extra_info=False):
-
+        valid_bool = True
         if self._use_api_service:
             wikidata_id = self.normalise(wikidata_id_full)
             if wikidata_id is not None:
@@ -102,14 +102,15 @@ class WikidataManager(IdentifierManager):
                     except ConnectionError:
                         # Sleep 5 seconds, then try again
                         sleep(5)
+                valid_bool = False
             else:
                 if get_extra_info:
                     return False, {"valid": False}
                 return False
 
         if get_extra_info:
-            return True, {"valid": True}
-        return True
+            return valid_bool, {"valid": valid_bool}
+        return valid_bool
 
     def extra_info(self, api_response):
         result = {}

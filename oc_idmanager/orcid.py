@@ -93,6 +93,7 @@ class ORCIDManager(IdentifierManager):
 
 
     def exists(self, orcid, get_extra_info=False):
+        valid_bool = True
         if self._use_api_service:
             self._headers["Accept"] = "application/json"
             orcid = self.normalise(orcid)
@@ -115,13 +116,14 @@ class ORCIDManager(IdentifierManager):
                     except ConnectionError:
                         # Sleep 5 seconds, then try again
                         sleep(5)
+                valid_bool = False
             else:
                 if get_extra_info:
                     return False, {"valid": False}
                 return False
         if get_extra_info:
-            return True, {"valid": True}
-        return True
+            return valid_bool, {"valid": valid_bool}
+        return valid_bool
 
     def extra_info(self, api_response):
         print("api response", api_response)

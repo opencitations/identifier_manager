@@ -74,6 +74,7 @@ class PMIDManager(IdentifierManager):
 
 
     def exists(self, pmid_full, get_extra_info=False):
+        valid_bool = True
         if self._use_api_service:
             pmid = self.normalise(pmid_full)
             if pmid is not None:
@@ -101,13 +102,14 @@ class PMIDManager(IdentifierManager):
                     except ConnectionError:
                         # Sleep 5 seconds, then try again
                         sleep(5)
+                valid_bool = False
             else:
                 if get_extra_info:
                     return False, {"valid": False}
                 return False
         if get_extra_info:
-            return True, {"valid": True}
-        return True
+            return valid_bool, {"valid": valid_bool}
+        return valid_bool
 
     def extra_info(self, api_response):
         result = {}
