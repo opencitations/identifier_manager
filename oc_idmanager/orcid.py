@@ -92,7 +92,7 @@ class ORCIDManager(IdentifierManager):
         return True if match("^orcid:([0-9]{4}-){3}[0-9]{3}[0-9X]$", id_string, re.IGNORECASE) else False
 
 
-    def exists(self, orcid, get_extra_info=False):
+    def exists(self, orcid, get_extra_info=False, allow_extra_api=None):
         valid_bool = True
         if self._use_api_service:
             self._headers["Accept"] = "application/json"
@@ -125,7 +125,7 @@ class ORCIDManager(IdentifierManager):
             return valid_bool, {"valid": valid_bool}
         return valid_bool
 
-    def extra_info(self, api_response):
+    def extra_info(self, api_response, choose_api=None, info_dict={}):
         print("api response", api_response)
         result = {}
         result["valid"] = True

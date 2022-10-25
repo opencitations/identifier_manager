@@ -75,7 +75,7 @@ class WikidataManager(IdentifierManager):
             id_string = "wikidata:"+id_string
         return True if match("^wikidata:Q[1-9]\\d*$", id_string) else False
 
-    def exists(self, wikidata_id_full, get_extra_info=False):
+    def exists(self, wikidata_id_full, get_extra_info=False, allow_extra_api=None):
         valid_bool = True
         if self._use_api_service:
             wikidata_id = self.normalise(wikidata_id_full)
@@ -112,7 +112,7 @@ class WikidataManager(IdentifierManager):
             return valid_bool, {"valid": valid_bool}
         return valid_bool
 
-    def extra_info(self, api_response):
+    def extra_info(self, api_response, choose_api=None, info_dict={}):
         result = {}
         result["valid"] = True
         # to be implemented

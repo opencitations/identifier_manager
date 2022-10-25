@@ -23,9 +23,9 @@ class ISSNManager(IdentifierManager):
 
     def __init__(self, data={}):
         """ISSN manager constructor."""
+        super(ISSNManager, self).__init__()
         self._p = "issn:"
         self._data = data
-        super(ISSNManager, self).__init__()
 
     def is_valid(self, id_string, get_extra_info=False):
         issn = self.normalise(id_string, include_prefix=True)

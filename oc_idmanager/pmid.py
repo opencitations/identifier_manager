@@ -22,9 +22,8 @@ from requests.exceptions import ConnectionError
 from time import sleep
 from bs4 import BeautifulSoup
 from oc_idmanager.base import IdentifierManager
-from oc_idmanager.issn import ISSNManager
+from oc_idmanager import *
 from datetime import datetime
-
 
 
 class PMIDManager(IdentifierManager):
@@ -32,12 +31,26 @@ class PMIDManager(IdentifierManager):
 
     def __init__(self, data={}, use_api_service=True):
         """PMID manager constructor."""
-        super(PMIDManager,self).__init__()
+        super(PMIDManager, self).__init__()
         self._api = "https://pubmed.ncbi.nlm.nih.gov/"
         self._use_api_service = use_api_service
         self._p = "pmid:"
         self._data = data
         self._im = ISSNManager()
+        #regex
+        self._doi_regex = r"(?<=^AID\s-\s).*\[doi\]\s*\n"
+        self._pmid_regex = r"(?<=PMID-\s)[1-9]\d*"
+        self._title_regex = r"(?<=^TI\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._author_regex = r"(?<=^FAU\s-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._date_regex = r"DP\s+-\s+(\d{4}(\s?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))?(\s?((3[0-1])|([1-2][0-9])|([0]?[1-9])))?)"
+        self._issn_regex = r"(?<=^IS\s{2}-\s)[0-9]{4}-[0-9]{3}[0-9X]"
+        self._journal_regex = r"(?<=^JT\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._volume_regex = r"(?<=^VI\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._issue_regex = r"(?<=^IP\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._page_regex = r"(?<=^PG\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._type_regex = r"(?<=^PT\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._publisher_regex = r"(?<=^PB\s{2}-\s)(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
+        self._editor_regex = r"((?<=^FED\s-\s)|(?<=^ED\s{2}-\s))(.+?)*(\n\s{6}(.+?)*)*(?=(?:\n[A-Z]{2,4}\s{,2}-\s*|$))"
 
     def is_valid(self, pmid, get_extra_info=False):
         pmid = self.normalise(pmid, include_prefix=True)
@@ -69,11 +82,10 @@ class PMIDManager(IdentifierManager):
 
     def check_digit(self, id_string):
         if not id_string.startswith(self._p):
-            id_string = self._p+id_string
+            id_string = self._p + id_string
         return True if match("^pmid:[1-9]\d*$", id_string) else False
 
-
-    def exists(self, pmid_full, get_extra_info=False):
+    def exists(self, pmid_full, get_extra_info=False, allow_extra_api=None):
         valid_bool = True
         if self._use_api_service:
             pmid = self.normalise(pmid_full)
@@ -91,11 +103,18 @@ class PMIDManager(IdentifierManager):
                             r.encoding = "utf-8"
                             soup = BeautifulSoup(r.text, features="lxml")
                             txt_obj = str(soup.find(id="article-details"))
-                            match_pmid = re.findall("PMID-\s*[1-9]\d*", txt_obj)
-                            if match_pmid:
-                                if get_extra_info:
-                                    return True, self.extra_info(txt_obj)
-                                return True
+                            match_pmid = re.finditer(self._pmid_regex, txt_obj, re.MULTILINE)
+                            for matchNum_pmid, match_p in enumerate(match_pmid, start=1):
+                                m_pmid = match_p.group()
+                                if m_pmid:
+                                    if get_extra_info:
+                                        return True, self.extra_info(txt_obj)
+                                    return True
+                        elif r.status_code == 404:
+                            if get_extra_info:
+                                return False, {"valid": False}
+                            return False
+
                     except ReadTimeout:
                         # Do nothing, just try again
                         pass
@@ -111,19 +130,22 @@ class PMIDManager(IdentifierManager):
             return valid_bool, {"valid": valid_bool}
         return valid_bool
 
-    def extra_info(self, api_response):
+    def extra_info(self, api_response, choose_api=None, info_dict={}):
         result = {}
         result["valid"] = True
 
         try:
             title = ""
-            fa_title = re.findall("[^BV]TI\s*-\s*([\S\s]*?)\n[A-Z]{2,5}\s*-\s*", api_response)
-            for i in fa_title:
-                t = re.sub("\s+", " ", i)
-                norm_title = t.strip()
-                if norm_title is not None:
-                    title = norm_title
-                    break
+            match_title = re.finditer(self._title_regex, api_response, re.MULTILINE)
+            for matchNum_tit, match_tit in enumerate(match_title, start=1):
+                m_title = match_tit.group()
+                if m_title:
+                    ts = re.sub("\s+", " ", m_title)
+                    t = re.sub("\n", " ", ts)
+                    norm_title = t.strip()
+                    if norm_title is not None:
+                        title = norm_title
+                        break
         except:
             title = ""
 
@@ -131,12 +153,15 @@ class PMIDManager(IdentifierManager):
 
         try:
             authors = set()
-            fa_aut = re.findall("FAU\s*-\s*.*[^\n]", api_response)
-            for i in fa_aut:
-                fau = re.search("(?:FAU\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_fau = fau.strip()
-                if norm_fau is not None:
-                    authors.add(norm_fau)
+            fa_aut = re.finditer(self._author_regex, api_response, re.MULTILINE)
+            for matchNum_aut, match_au in enumerate(fa_aut, start=1):
+                m_aut = match_au.group()
+                if m_aut:
+                    fau = re.sub("\s+", " ", m_aut)
+                    nlfau = re.sub("\n", " ", fau)
+                    norm_fau = nlfau.strip()
+                    if norm_fau is not None:
+                        authors.add(norm_fau)
             authorsList = list(authors)
         except:
             authorsList = []
@@ -144,8 +169,7 @@ class PMIDManager(IdentifierManager):
         result["author"] = authorsList
 
         try:
-            date = re.search(
-                "DP\s+-\s+(\d{4}(\s?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))?(\s?((3[0-1])|([1-2][0-9])|([0]?[1-9])))?)",
+            date = re.search(self._date_regex,
                 api_response,
                 re.IGNORECASE,
             ).group(1)
@@ -178,43 +202,52 @@ class PMIDManager(IdentifierManager):
                         pmid_date = ""
         except:
             pmid_date = ""
-        result["date"] = pmid_date
+        result["pub_date"] = pmid_date
 
         try:
             issnset = set()
-            fa_issn = re.findall("IS\s+-\s+[0-9]{4}-[0-9]{3}[0-9X]", api_response)
-            for i in fa_issn:
-                issn = re.search("[0-9]{4}-[0-9]{3}[0-9X]", i).group(0)
-                norm_issn = self._im.normalise(issn, include_prefix=True)
-                if norm_issn is not None:
-                    issnset.add(norm_issn)
+            fa_issn = re.finditer(self._issn_regex, api_response, re.MULTILINE)
+            for matchNum_issn, match_issn in enumerate(fa_issn, start=1):
+                m_issn = match_issn.group()
+                if m_issn:
+                    norm_issn = self._im.normalise(m_issn, include_prefix=True)
+                    if norm_issn is not None:
+                        issnset.add(norm_issn)
             issnlist = list(issnset)
         except:
             issnlist = []
 
+        # CONTINUA DA QUI
+
         try:
             jur_title = ""
-            fa_jur = re.findall("JT\s*-\s*.*[^\n]", api_response)
-            for i in fa_jur:
-                jt = re.search("(?:JT\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_jour = jt.strip()
-                if norm_jour is not None:
-                    jur_title = norm_jour
-                    break
+            fa_jur_title = re.finditer(self._journal_regex, api_response, re.MULTILINE)
+            for matchNum_title, match_tit in enumerate(fa_jur_title, start=1):
+                m_title = match_tit.group()
+                if m_title:
+                    s_jt = re.sub("\s+", " ", m_title)
+                    n_jt = re.sub("\n", " ", s_jt)
+                    norm_jour = n_jt.strip()
+                    if norm_jour is not None:
+                        jur_title = norm_jour
+                        break
         except:
             jur_title = ""
 
-        result["venue"] = (f'{jur_title} {[x for x in issnlist]}' if jur_title else str(issnlist).replace(",", "")).replace("'","")
+        result["venue"] = (
+            f'{jur_title} {[x for x in issnlist]}' if jur_title else str(issnlist).replace(",", "")).replace("'", "")
 
         try:
             volume = ""
-            fa_volume = re.findall("VI\s*-\s*.*[^\n]", api_response)
-            for i in fa_volume:
-                vi = re.search("(?:VI\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_volume = vi.strip()
-                if norm_volume is not None:
-                    volume = norm_volume
-                    break
+            fa_volume = re.finditer(self._volume_regex, api_response, re.MULTILINE)
+            for matchNum_volume, match_vol in enumerate(fa_volume, start=1):
+                m_vol = match_vol.group()
+                if m_vol:
+                    vol = re.sub("\s+", " ", m_vol)
+                    norm_volume = vol.strip()
+                    if norm_volume is not None:
+                        volume = norm_volume
+                        break
         except:
             volume = ""
 
@@ -222,13 +255,16 @@ class PMIDManager(IdentifierManager):
 
         try:
             issue = ""
-            fa_issue = re.findall("IP\s*-\s*.*[^\n]", api_response)
-            for i in fa_issue:
-                vi = re.search("(?:IP\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_issue = vi.strip()
-                if norm_issue is not None:
-                    issue = norm_issue
-                    break
+            fa_issue = re.finditer(self._issue_regex, api_response, re.MULTILINE)
+            for matchNum_issue, match_issue in enumerate(fa_issue, start=1):
+                m_issue = match_issue.group()
+                if m_issue:
+                    s_issue = re.sub("\s+", " ", m_issue)
+                    n_issue = re.sub("\n", " ", s_issue)
+                    norm_issue = n_issue.strip()
+                    if norm_issue is not None:
+                        issue = norm_issue
+                        break
         except:
             issue = ""
 
@@ -236,13 +272,16 @@ class PMIDManager(IdentifierManager):
 
         try:
             pag = ""
-            fa_pag = re.findall("PG\s*-\s*.*[^\n]", api_response)
-            for i in fa_pag:
-                pg = re.search("(?:PG\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_pag = pg.strip()
-                if norm_pag is not None:
-                    pag = norm_pag
-                    break
+            fa_pag = re.finditer(self._page_regex, api_response, re.MULTILINE)
+            for matchNum_pag, match_pag in enumerate(fa_pag, start=1):
+                m_pag = match_pag.group()
+                if m_pag:
+                    s_pg = re.sub("\s+", " ", m_pag)
+                    n_pg = re.sub("\n", " ", s_pg)
+                    norm_pag = n_pg.strip()
+                    if norm_pag is not None:
+                        pag = norm_pag
+                        break
         except:
             pag = ""
 
@@ -250,26 +289,32 @@ class PMIDManager(IdentifierManager):
 
         try:
             pub_types = set()
-            types = re.findall("PT\s*-\s*.*[^\n]", api_response)
-            for i in types:
-                ty = re.search("(?:PT\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_type = ty.strip().lower()
-                if norm_type is not None:
-                    pub_types.add(norm_type)
+            types = re.finditer(self._type_regex, api_response, re.MULTILINE)
+            for matchNum_types, match_types in enumerate(types, start=1):
+                m_type = match_types.group()
+                if m_type:
+                    s_ty = re.sub("\s+", " ", m_type)
+                    b_ty = re.sub("\n", " ", s_ty)
+                    norm_type = b_ty.strip().lower()
+                    if norm_type is not None:
+                        pub_types.add(norm_type)
             typeslist = list(pub_types)
         except:
             typeslist = []
 
-        result["types"] = typeslist
+        result["type"] = typeslist
 
         try:
             publisher = set()
-            publishers = re.findall("PB\s*-\s*.*[^\n]", api_response)
-            for i in publishers:
-                pbs = re.search("(?:PB\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_pbs = pbs.strip()
-                if norm_pbs is not None:
-                    publisher.add(norm_pbs)
+            publishers = re.finditer(self._publisher_regex, api_response, re.MULTILINE)
+            for matchNum_publishers, match_publishers in enumerate(publishers, start=1):
+                m_publishers = match_publishers.group()
+                if m_publishers:
+                    s_pbs = re.sub("\s+", " ", m_publishers)
+                    n_pbs = re.sub("\n", " ", s_pbs)
+                    norm_pbs = n_pbs.strip()
+                    if norm_pbs is not None:
+                        publisher.add(norm_pbs)
             publisherlist = list(publisher)
         except:
             publisherlist = []
@@ -278,22 +323,43 @@ class PMIDManager(IdentifierManager):
 
         try:
             editor = set()
-            editors = re.findall("F*ED\s*-\s*.*[^\n]", api_response)
-            for i in editors:
-                ed = re.search("(?:F*ED\s*-\s*)?(.+)(?:\n)?", i).group(1)
-                norm_ed = ed.strip()
-                if norm_ed is not None:
-                    editor.add(norm_ed)
+            editors = re.finditer(self._editor_regex, api_response, re.MULTILINE)
+            for matchNum_editors, match_editors in enumerate(editors, start=1):
+                m_editors = match_editors.group()
+                if m_editors:
+                    s_ed = re.sub("\s+", " ", m_editors)
+                    n_ed = re.sub("\n", " ", s_ed)
+                    norm_ed = n_ed.strip()
+                    if norm_ed is not None:
+                        editor.add(norm_ed)
             editorlist = list(editor)
         except:
             editorlist = []
 
         result["editor"] = editorlist
 
+        doi = ""
+        try:
+            map_doi = re.finditer(self._doi_regex, api_response, re.MULTILINE)
+            for matchNum_doi, match_doi in enumerate(map_doi, start=1):
+                m_doi = match_doi.group()
+                if m_doi:
+                    id = re.sub("\s+", " ", m_doi)
+                    n_id = re.sub("\n", " ", id)
+                    n_id_strip = n_id.strip()
+
+                    if n_id_strip.endswith('[doi]'):
+                        n_id_strip = n_id_strip[:-5]
+                    dm = DOIManager()
+                    norm_id = dm.normalise(n_id_strip)
+                    if norm_id is not None:
+                        doi = norm_id
+                        break
+                    else:
+                        doi = ""
+        except:
+            doi = ""
+
+        result["doi"] = doi
+
         return result
-
-
-
-
-
-
