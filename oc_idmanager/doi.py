@@ -425,7 +425,7 @@ class DOIManager(IdentifierManager):
                         if result.get("editor") is None or result.get("editor") == []:
                             result["editor"] = editors_string_list
 
-                    # GET PUB DATE --> continua da qui, riprendi da finder
+                    # GET PUB DATE
                     if result.get('pub_date') is None or result.get('pub_date') == '':
                         cur_date = ""
                         dates = message.get("dates")
