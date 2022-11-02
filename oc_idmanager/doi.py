@@ -429,13 +429,15 @@ class DOIManager(IdentifierManager):
                     if result.get('pub_date') is None or result.get('pub_date') == '':
                         cur_date = ""
                         dates = message.get("dates")
-                        for date in dates:
-                            if date.get("dateType") == "Issued":
-                                cur_date = date.get("date")
-                                break
+                        if dates:
+                            for date in dates:
+                                if date.get("dateType") == "Issued":
+                                    cur_date = date.get("date")
+                                    break
 
                         if cur_date == "":
-                            cur_date = str(message.get("publicationYear")) if cur_date is not None else ""
+                            if message.get("publicationYear"):
+                                cur_date = str(message.get("publicationYear"))
 
                         result['pub_date'] = cur_date
 
