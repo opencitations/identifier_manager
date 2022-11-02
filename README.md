@@ -16,6 +16,7 @@ Repository collecting OpenCitations Identifier Managers, including:
     <li>orcid</li>
     <li>wikidata</li>
     <li>wikipedia</li>
+    <li>url</li>
 </ol>
 
 ### Methods

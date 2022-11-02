@@ -97,6 +97,10 @@
 
     "wikidata:Q24698708": {"valid": true},
 
-    "wikidata:Q12": {"valid": false}
+    "wikidata:Q12": {"valid": false},
+
+    "url:datacite.org": {"valid":  true},
+
+    "url:opencitations.net": {"valid":  true}
 
 }

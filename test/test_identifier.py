@@ -20,6 +20,7 @@ import unittest
 from os import makedirs
 from os.path import join, exists
 from oc_idmanager import *
+from oc_idmanager.url import URLManager
 
 
 class IdentifierManagerTest(unittest.TestCase):
@@ -67,6 +68,50 @@ class IdentifierManagerTest(unittest.TestCase):
         self.valid_wikidata_3 = "Q15767074"
         self.invalid_wikidata_1 = "Q34433Q345"
         self.invalid_wikidata_3 = "Q12"  # not existing yet
+
+
+        self.valid_url_1 = "https://datacite.org/"
+        self.valid_url_2 = "opencitations.net"
+        self.valid_url_3 = "https://www.nih.gov/"
+        self.valid_url_4 = "https://it.wikipedia.org/wiki/Muro di Berlino"
+        self.invalid_url_1 = "https://www.nih.gov/invalid_url"
+        self.invalid_url_2 = "opencitations.net/not a real page .org"  # not existing yet
+
+    def test_url_normalise(self):
+        um = URLManager()
+        self.assertEqual(
+            um.normalise(self.valid_url_1),
+            um.normalise(self.valid_url_1.replace("https://.", "https://www.")),
+        )
+        self.assertEqual(
+            um.normalise(self.valid_url_2),
+            um.normalise("https://" + self.valid_url_2),
+        )
+        self.assertEqual(
+            um.normalise(self.valid_url_3),
+            um.normalise(
+                self.valid_url_3.replace("https://www.", "https://")
+            ),
+        )
+
+    def test_url_valid(self):
+        um_nofile = URLManager()
+        self.assertTrue(um_nofile.is_valid(self.valid_url_1))
+        self.assertTrue(um_nofile.is_valid(self.valid_url_2))
+        self.assertTrue(um_nofile.is_valid(self.valid_url_3))
+        self.assertTrue(um_nofile.is_valid(self.valid_url_4))
+        self.assertFalse(um_nofile.is_valid(self.invalid_url_1))
+        self.assertFalse(um_nofile.is_valid(self.invalid_url_2))
+
+        um_file = URLManager(self.data, use_api_service=False)
+        self.assertTrue(um_file.normalise(self.valid_url_1, include_prefix=True) in self.data)
+        self.assertTrue(um_file.normalise(self.valid_url_2, include_prefix=True) in self.data)
+
+        clean_data = {}
+
+        um_nofile_noapi = URLManager(clean_data, use_api_service=False)
+        self.assertTrue(um_nofile_noapi.is_valid(self.valid_url_1))
+        self.assertTrue(um_nofile_noapi.is_valid(self.invalid_url_1))
 
     def test_doi_normalise(self):
         dm = DOIManager()

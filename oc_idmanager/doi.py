@@ -26,6 +26,7 @@ from oc_idmanager.base import IdentifierManager
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.orcid import ORCIDManager
+from oc_meta.plugins.crossref.crossref_processing import CrossrefProcessing
 from typing import Dict, List, Tuple
 from csv import DictReader
 from bs4 import BeautifulSoup

@@ -80,7 +80,7 @@ class PMIDManager(IdentifierManager):
             # Any error in processing the PMID will return None
             return None
 
-    def check_digit(self, id_string):
+    def syntax_ok(self, id_string):
         if not id_string.startswith(self._p):
             id_string = self._p + id_string
         return True if match("^pmid:[1-9]\d*$", id_string) else False
