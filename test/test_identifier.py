@@ -310,4 +310,20 @@ class IdentifierManagerTest(unittest.TestCase):
         wdm_nofile_noapi = WikidataManager(clean_data, use_api_service=False)
         self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikidata_1))
         self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikidata_2))
-
+    
+    def test_exists(self):
+        with self.subTest(msg="get_extra_info=True, allow_extra_api=None"):
+            doi_manager = DOIManager()
+            output = doi_manager.exists('10.1007/s11192-022-04367-w', get_extra_info=True, allow_extra_api=None)
+            expected_output = (True, {'valid': True})
+            self.assertEqual(output, expected_output)
+        with self.subTest(msg="get_extra_info=False, allow_extra_api=None"):
+            doi_manager = DOIManager()
+            output = doi_manager.exists('10.1007/s11192-022-04367-w', get_extra_info=False, allow_extra_api=None)
+            expected_output = True
+            self.assertEqual(output, expected_output)
+        with self.subTest(msg="get_extra_info=False, allow_extra_api='crossref'"):
+            doi_manager = DOIManager()
+            output = doi_manager.exists('10.1007/s11192-022-04367-w', get_extra_info=False, allow_extra_api='crossref')
+            expected_output = True
+            self.assertEqual(output, expected_output)

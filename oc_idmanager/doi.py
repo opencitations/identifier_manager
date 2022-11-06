@@ -16,17 +16,12 @@
 
 
 from __future__ import annotations
-from json import loads
-from oc_idmanager.metadata_manager import MetadataManager
-from oc_idmanager import *
 from oc_idmanager.base import IdentifierManager
-from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.issn import ISSNManager
+from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.orcid import ORCIDManager
+from oc_idmanager.support import call_api, extract_info
 from re import sub, match
-from requests import get, ReadTimeout
-from requests.exceptions import ConnectionError
-from time import sleep
 from urllib.parse import unquote, quote
 import re
 
@@ -40,6 +35,8 @@ class DOIManager(IdentifierManager):
         self._api = "https://doi.org/api/handles/"
         self._api_crossref = "https://api.crossref.org/works/"
         self._api_datacite = "https://api.datacite.org/dois/"
+        self._api_medra = "https://api.medra.org/metadata/"
+        self._api_unknown = "https://doi.org/ra/"
         self._use_api_service = use_api_service
         self._p = "doi:"
         self._data = data
@@ -49,7 +46,6 @@ class DOIManager(IdentifierManager):
 
     def is_valid(self, id_string, get_extra_info=False):
         doi = self.normalise(id_string, include_prefix=True)
-
         if doi is None:
             return False
         else:
@@ -88,80 +84,22 @@ class DOIManager(IdentifierManager):
         if self._use_api_service:
             doi = self.normalise(doi_full)
             if doi is not None:
-                tentative = 3
-                while tentative:
-                    tentative -= 1
-                    try:
-                        r = get(self._api + quote(doi), headers=self._headers, timeout=30)
-                        if r.status_code == 200:
-                            r.encoding = "utf-8"
-                            json_res = loads(r.text)
-                            valid_bool = json_res.get("responseCode") == 1
-                            if get_extra_info:
-                                result = self.extra_info(json_res)
-                                if allow_extra_api is None:
-                                    return valid_bool, result
-
-                                elif valid_bool is True and "crossref" in allow_extra_api:
-
-                                    tentative = 3
-                                    while tentative:
-                                        tentative -= 1
-                                        try:
-                                            r = get(self._api_crossref + quote(doi), headers=self._headers, timeout=30)
-                                            if r.status_code == 200:
-                                                r.encoding = "utf-8"
-                                                result = self.extra_info(loads(r.text), "crossref", result)
-                                                return valid_bool, result
-                                            else:
-                                                return valid_bool, {}
-                                        except ReadTimeout:
-                                            pass
-                                        except ConnectionError:
-                                            sleep(5)
-
-                                elif valid_bool is True and "datacite" in allow_extra_api:
-                                    tentative = 3
-                                    while tentative:
-                                        tentative -= 1
-                                        try:
-                                            r = get(self._api_datacite + quote(doi), headers=self._headers, timeout=30)
-                                            if r.status_code == 200:
-                                                r.encoding = "utf-8"
-                                                result = self.extra_info(loads(r.text), "datacite", result)
-                                                return valid_bool, result
-                                            else:
-                                                return valid_bool, {}
-                                        except ReadTimeout:
-                                            pass
-                                        except ConnectionError:
-                                            sleep(5)
-                            return valid_bool
-
-                        elif r.status_code == 404:
-                            if get_extra_info:
-                                return False, {"valid": False}
-                            return False
-                    except ReadTimeout:
-                        # Do nothing, just try again
-                        pass
-                    except ConnectionError:
-                        # Sleep 5 seconds, then try again
-                        sleep(5)
+                json_res = call_api(url=self._api + quote(doi), headers=self._headers)
+                if json_res:
+                    valid_bool = json_res.get("responseCode") == 1
+                    if get_extra_info:
+                        result = extract_info(json_res)
+                        if allow_extra_api is None:
+                            return valid_bool, result
+                        elif valid_bool is True and allow_extra_api:
+                            extra_api_result = call_api(url=getattr(self, f'_api_{allow_extra_api}') + quote(doi), headers=self._headers)
+                            if extra_api_result:
+                                extra_info = extract_info(extra_api_result, allow_extra_api, result)
+                                return valid_bool, extra_info
+                            else:
+                                return valid_bool, dict()
+                    return valid_bool
                 valid_bool = False
-            else:
-                if get_extra_info:
-                    return False, {"valid": False}
-                return False
-
         if get_extra_info:
             return valid_bool, {"valid": valid_bool}
         return valid_bool
-
-    def extra_info(self, api_response:dict, choose_api:str|None=None, info_dict:dict=dict()) -> dict:
-        result = info_dict
-        result["valid"] = True
-        metadata_manager = MetadataManager(metadata_provider=choose_api, api_response=api_response)
-        result = metadata_manager.extract_metadata(result)
-        return result
-

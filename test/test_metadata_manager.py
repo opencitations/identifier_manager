@@ -44,3 +44,16 @@ class MetadataManagerTest(unittest.TestCase):
             'type': ['FIGURE', 'misc', 'graphic', 'ImageObject', 'Poster', 'Image'], 
             'publisher': 'figshare'})
         self.assertEqual(output, expected_output)
+
+    def test_extract_from_unknown(self):
+        doi_manager = DOIManager(use_api_service=True)
+        output = doi_manager.exists(doi_full='10.6084/m9.figshare.1468349', get_extra_info=True, allow_extra_api='unknown')
+        expected_output = (
+            True, 
+            {'valid': True, 
+            'title': 'RASH Framework - ESWC 2015 MoM session', 
+            'author': ['Peroni, Silvio'], 'editor': [], 'pub_date': '2015', 
+            'venue': '', 'volume': '', 'issue': '', 'page': '', 
+            'type': ['FIGURE', 'misc', 'graphic', 'ImageObject', 'Poster', 'Image'], 
+            'publisher': 'figshare'})
+        self.assertEqual(output, expected_output)

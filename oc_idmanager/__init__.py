@@ -15,6 +15,7 @@
 # SOFTWARE.
 
 
+from oc_idmanager.base import IdentifierManager
 from oc_idmanager.doi import DOIManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.issn import ISSNManager

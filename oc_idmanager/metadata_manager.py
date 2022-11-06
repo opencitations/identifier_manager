@@ -15,7 +15,11 @@
 
 
 from bs4 import BeautifulSoup
+from oc_idmanager.issn import ISSNManager
+from oc_idmanager.isbn import ISBNManager
+from oc_idmanager.orcid import ORCIDManager
 from typing import List, Tuple
+from urllib.parse import quote
 import html
 import re
 
@@ -24,13 +28,10 @@ class MetadataManager():
     def __init__(self, metadata_provider:str, api_response:dict):
         self.metadata_provider = metadata_provider
         self.api_response = api_response
-        from oc_idmanager import DOIManager
-        from oc_idmanager import ISBNManager
-        from oc_idmanager import ISSNManager
-        from oc_idmanager.orcid import ORCIDManager
         self._issnm = ISSNManager()
         self._isbnm = ISBNManager()
         self._om = ORCIDManager()
+        from oc_idmanager.doi import DOIManager
         self.doi_manager = DOIManager()
 
     def extract_metadata(self, output_dict:dict) -> None:
@@ -453,6 +454,18 @@ class MetadataManager():
                     result["publisher"] = []
         return result
 
+    def extract_from_medra(self, output_dict:dict) -> None:
+        pass
+
+    def extract_from_unknown(self, output_dict:dict) -> None:
+        from oc_idmanager.support import call_api, extract_info
+        registration_agency = self.api_response[0]['RA'].lower()
+        doi = self.api_response[0]['DOI']
+        api_registration_agency = getattr(self.doi_manager, f'_api_{registration_agency}')
+        url = api_registration_agency + quote(doi)
+        extra_api_result = call_api(url=url, headers=self.doi_manager._headers)
+        return extract_info(extra_api_result, registration_agency, output_dict)
+    
     def get_agents_strings_list(self, agents_list:List[dict]) -> Tuple[list, list]:
         authors_strings_list = list()
         editors_string_list = list()
