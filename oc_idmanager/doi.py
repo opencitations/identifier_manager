@@ -92,12 +92,13 @@ class DOIManager(IdentifierManager):
                         if allow_extra_api is None:
                             return valid_bool, result
                         elif valid_bool is True and allow_extra_api:
-                            extra_api_result = call_api(url=getattr(self, f'_api_{allow_extra_api}') + quote(doi), headers=self._headers)
+                            r_format = "xml" if allow_extra_api == "medra" else "json"
+                            extra_api_result = call_api(url=getattr(self, f'_api_{allow_extra_api}') + quote(doi), headers=self._headers, r_format=r_format)
                             if extra_api_result:
                                 extra_info = extract_info(extra_api_result, allow_extra_api, result)
                                 return valid_bool, extra_info
                             else:
-                                return valid_bool, dict()
+                                return valid_bool, {'valid': False}
                     return valid_bool
                 valid_bool = False
         if get_extra_info:

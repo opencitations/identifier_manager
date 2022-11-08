@@ -16,6 +16,7 @@
 
 
 from __future__ import annotations
+from bs4 import BeautifulSoup
 from json import loads
 from oc_idmanager.metadata_manager import MetadataManager
 from requests import get, ReadTimeout
@@ -23,7 +24,7 @@ from requests.exceptions import ConnectionError
 from time import sleep
 
 
-def call_api(url:str, headers:str) -> dict|None:
+def call_api(url:str, headers:str, r_format:str="json") -> dict|None:
     tentative = 3
     while tentative:
         tentative -= 1
@@ -31,8 +32,7 @@ def call_api(url:str, headers:str) -> dict|None:
             r = get(url, headers=headers, timeout=30)
             if r.status_code == 200:
                 r.encoding = "utf-8"
-                json_res = loads(r.text)
-                return json_res
+                return loads(r.text) if r_format == "json" else BeautifulSoup(r.text, 'xml')
             elif r.status_code == 404:
                 return None
         except ReadTimeout:

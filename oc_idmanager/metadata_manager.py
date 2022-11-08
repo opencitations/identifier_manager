@@ -15,6 +15,7 @@
 
 
 from bs4 import BeautifulSoup
+from medra_processing import MedraProcessing
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.orcid import ORCIDManager
@@ -455,7 +456,8 @@ class MetadataManager():
         return result
 
     def extract_from_medra(self, output_dict:dict) -> None:
-        pass
+        medra_processing = MedraProcessing()
+        return medra_processing.csv_creator(self.api_response)
 
     def extract_from_unknown(self, output_dict:dict) -> None:
         from oc_idmanager.support import call_api, extract_info
