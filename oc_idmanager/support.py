@@ -44,8 +44,7 @@ def call_api(url:str, headers:str, r_format:str="json") -> dict|None:
     return None
 
 def extract_info(api_response:dict, choose_api:str|None=None, info_dict:dict=dict()) -> dict:
-    result = info_dict
-    result["valid"] = True
+    info_dict["valid"] = True
     metadata_manager = MetadataManager(metadata_provider=choose_api, api_response=api_response)
-    result = metadata_manager.extract_metadata(result)
-    return result
+    info_dict = metadata_manager.extract_metadata(info_dict)
+    return info_dict

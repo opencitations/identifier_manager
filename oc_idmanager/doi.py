@@ -98,7 +98,7 @@ class DOIManager(IdentifierManager):
                                 extra_info = extract_info(extra_api_result, allow_extra_api, result)
                                 return valid_bool, extra_info
                             else:
-                                return valid_bool, {'valid': False}
+                                return valid_bool, {'valid': valid_bool}
                     return valid_bool
                 valid_bool = False
         if get_extra_info:

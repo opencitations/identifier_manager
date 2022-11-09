@@ -43,175 +43,170 @@ class MetadataManager():
     def extract_from_crossref(self, output_dict:dict) -> None:
         api_response_dict = self.api_response
         result = output_dict
-        if result.get("valid") is None:
-            if api_response_dict["status"] == "ok":
-                result["valid"] = True
-
-        if result["valid"] is True:
-            message = api_response_dict["message"]
-            if not 'DOI' in message:
-                return result
+        message = api_response_dict["message"]
+        if not 'DOI' in message:
+            return result
+        else:
+            if isinstance(message['DOI'], list):
+                doi = self.doi_manager.normalise(str(message['DOI'][0]), include_prefix=False)
             else:
-                if isinstance(message['DOI'], list):
-                    doi = self.doi_manager.normalise(str(message['DOI'][0]), include_prefix=False)
-                else:
-                    doi = self.doi_manager.normalise(str(message['DOI']), include_prefix=False)
+                doi = self.doi_manager.normalise(str(message['DOI']), include_prefix=False)
 
-                # GET TITLE
-                if result.get("title") is None or result.get("title") ==  "":
-                    if 'title' in message:
-                        if message['title']:
-                            if isinstance(message['title'], list):
-                                text_title = message['title'][0]
-                            else:
-                                text_title = message['title']
-                            soup = BeautifulSoup(text_title, 'html.parser')
-                            title_soup = soup.get_text().replace('\n', '')
-                            title = html.unescape(title_soup)
-                            result['title'] = title
-
-                # GET AUTHORS and EDITORS
-                agents_list = []
-                if 'author' in message:
-                    for author in message['author']:
-                        author['role'] = 'author'
-                    agents_list.extend(message['author'])
-                if 'editor' in message:
-                    for editor in message['editor']:
-                        editor['role'] = 'editor'
-                    agents_list.extend(message['editor'])
-                authors_strings_list, editors_string_list = self.get_agents_strings_list(agents_list)
-
-                if result.get("author") is None or result.get("author") == []:
-                    result["author"] = authors_strings_list
-                if result.get("editor") is None or result.get("editor") == []:
-                    result["editor"] = editors_string_list
-
-                # GET PUB DATE
-                if result.get('pub_date') is None or result.get('pub_date') == '':
-                    if 'issued' in message:
-                        if message['issued']['date-parts'][0][0]:
-                            result['pub_date'] = '-'.join([str(y) for y in message['issued']['date-parts'][0]])
+            # GET TITLE
+            if result.get("title") is None or result.get("title") ==  "":
+                if 'title' in message:
+                    if message['title']:
+                        if isinstance(message['title'], list):
+                            text_title = message['title'][0]
                         else:
-                            result['pub_date'] = ''
+                            text_title = message['title']
+                        soup = BeautifulSoup(text_title, 'html.parser')
+                        title_soup = soup.get_text().replace('\n', '')
+                        title = html.unescape(title_soup)
+                        result['title'] = title
 
-                # GET VENUE
-                '''
-                generation of the venue's name, followed by id in square brackets, separated by spaces.
-                HTML tags are deleted and HTML entities escaped. In addition, any ISBN and ISSN are validated.
-                Finally, the square brackets in the venue name are replaced by round brackets to avoid conflicts with the ids enclosures.
+            # GET AUTHORS and EDITORS
+            agents_list = []
+            if 'author' in message:
+                for author in message['author']:
+                    author['role'] = 'author'
+                agents_list.extend(message['author'])
+            if 'editor' in message:
+                for editor in message['editor']:
+                    editor['role'] = 'editor'
+                agents_list.extend(message['editor'])
+            authors_strings_list, editors_string_list = self.get_agents_strings_list(agents_list)
 
-                'NAME [SCHEMA:ID]', for example, 'Nutrition & Food Science [issn:0034-6659]'. If the id does not exist, the output is only the name. Finally, if there is no venue, the output is an empty string.
-                '''
-                if result.get("venue") is None or result.get("venue") == "":
-                    name_and_id = ''
-                    if 'container-title' in message:
-                        if message['container-title']:
-                            if isinstance(message['container-title'], list):
-                                ventit = str(message['container-title'][0]).replace('\n', '')
-                            else:
-                                ventit = str(message['container-title']).replace('\n', '')
-                            ven_soup = BeautifulSoup(ventit, 'html.parser')
-                            ventit = html.unescape(ven_soup.get_text())
-                            ambiguous_brackets = re.search('\[\s*((?:[^\s]+:[^\s]+)?(?:\s+[^\s]+:[^\s]+)*)\s*\]', ventit)
-                            if ambiguous_brackets:
-                                match = ambiguous_brackets.group(1)
-                                open_bracket = ventit.find(match) - 1
-                                close_bracket = ventit.find(match) + len(match)
-                                ventit = ventit[:open_bracket] + '(' + ventit[open_bracket + 1:]
-                                ventit = ventit[:close_bracket] + ')' + ventit[close_bracket + 1:]
-                            venidlist = list()
-                            if 'ISBN' in message:
-                                if message['type'] in {'book chapter', 'book part', 'book section', 'book track',
-                                                    'reference entry'}:
-                                    self.id_worker(message['ISBN'], venidlist, self.isbn_worker)
+            if result.get("author") is None or result.get("author") == []:
+                result["author"] = authors_strings_list
+            if result.get("editor") is None or result.get("editor") == []:
+                result["editor"] = editors_string_list
 
-                            if 'ISSN' in message:
-                                if message['type'] in {'book', 'data file', 'dataset', 'edited book', 'journal article',
-                                                    'journal volume', 'journal issue', 'monograph', 'proceedings',
-                                                    'peer review', 'reference book', 'reference entry', 'report'}:
-                                    self.id_worker(message['ISSN'], venidlist, self.issn_worker)
-                                elif message['type'] == 'report series':
-                                    if 'container-title' in message:
-                                        if message['container-title']:
-                                            self.id_worker(message['ISSN'], venidlist, self.issn_worker)
-                            if venidlist:
-                                name_and_id = ventit + ' [' + ' '.join(venidlist) + ']'
-                            else:
-                                name_and_id = ventit
-
-                    result['venue'] = name_and_id
-
-                # GET VOLUME
-                if result.get("volume") is None or result.get("volume") == "":
-                    if 'volume' in message:
-                        result['volume'] = message['volume']
+            # GET PUB DATE
+            if result.get('pub_date') is None or result.get('pub_date') == '':
+                if 'issued' in message:
+                    if message['issued']['date-parts'][0][0]:
+                        result['pub_date'] = '-'.join([str(y) for y in message['issued']['date-parts'][0]])
                     else:
-                        result['volume'] = ""
+                        result['pub_date'] = ''
 
-                # GET ISSUE
-                if result.get("issue") is None or result.get("issue") == "":
-                    if 'issue' in message:
-                        result['issue'] = message['issue']
-                    else:
-                        result['issue'] = ""
+            # GET VENUE
+            '''
+            generation of the venue's name, followed by id in square brackets, separated by spaces.
+            HTML tags are deleted and HTML entities escaped. In addition, any ISBN and ISSN are validated.
+            Finally, the square brackets in the venue name are replaced by round brackets to avoid conflicts with the ids enclosures.
 
+            'NAME [SCHEMA:ID]', for example, 'Nutrition & Food Science [issn:0034-6659]'. If the id does not exist, the output is only the name. Finally, if there is no venue, the output is an empty string.
+            '''
+            if result.get("venue") is None or result.get("venue") == "":
+                name_and_id = ''
+                if 'container-title' in message:
+                    if message['container-title']:
+                        if isinstance(message['container-title'], list):
+                            ventit = str(message['container-title'][0]).replace('\n', '')
+                        else:
+                            ventit = str(message['container-title']).replace('\n', '')
+                        ven_soup = BeautifulSoup(ventit, 'html.parser')
+                        ventit = html.unescape(ven_soup.get_text())
+                        ambiguous_brackets = re.search('\[\s*((?:[^\s]+:[^\s]+)?(?:\s+[^\s]+:[^\s]+)*)\s*\]', ventit)
+                        if ambiguous_brackets:
+                            match = ambiguous_brackets.group(1)
+                            open_bracket = ventit.find(match) - 1
+                            close_bracket = ventit.find(match) + len(match)
+                            ventit = ventit[:open_bracket] + '(' + ventit[open_bracket + 1:]
+                            ventit = ventit[:close_bracket] + ')' + ventit[close_bracket + 1:]
+                        venidlist = list()
+                        if 'ISBN' in message:
+                            if message['type'] in {'book chapter', 'book part', 'book section', 'book track',
+                                                'reference entry'}:
+                                self.id_worker(message['ISBN'], venidlist, self.isbn_worker)
 
-                # GET PAGE
-                if result.get("page") is None or result.get("page") == "":
-                    if 'page' in message:
-                        roman_letters = {'I', 'V', 'X', 'L', 'C', 'D', 'M'}
-                        pages_list = re.split('[^A-Za-z\d]+(?=[A-Za-z\d]+)', message['page'])
-                        clean_pages_list = list()
-                        for page in pages_list:
-                            # e.g. 583-584
-                            if all(c.isdigit() for c in page):
-                                clean_pages_list.append(page)
-                            # e.g. G27. It is a born digital document. PeerJ uses this approach, where G27 identifies the whole document, since it has no pages.
-                            elif len(pages_list) == 1:
-                                clean_pages_list.append(page)
-                            # e.g. iv-vii. This syntax is used in the prefaces.
-                            elif all(c.upper() in roman_letters for c in page):
-                                clean_pages_list.append(page)
-                            # 583b-584. It is an error. The b must be removed.
-                            elif any(c.isdigit() for c in page):
-                                page_without_letters = ''.join([c for c in page if c.isdigit()])
-                                clean_pages_list.append(page_without_letters)
-                        pages = '-'.join(clean_pages_list)
-                        result['page'] = pages
-                    else:
-                        result['page'] = ""
+                        if 'ISSN' in message:
+                            if message['type'] in {'book', 'data file', 'dataset', 'edited book', 'journal article',
+                                                'journal volume', 'journal issue', 'monograph', 'proceedings',
+                                                'peer review', 'reference book', 'reference entry', 'report'}:
+                                self.id_worker(message['ISSN'], venidlist, self.issn_worker)
+                            elif message['type'] == 'report series':
+                                if 'container-title' in message:
+                                    if message['container-title']:
+                                        self.id_worker(message['ISSN'], venidlist, self.issn_worker)
+                        if venidlist:
+                            name_and_id = ventit + ' [' + ' '.join(venidlist) + ']'
+                        else:
+                            name_and_id = ventit
 
+                result['venue'] = name_and_id
 
-                # GET PUBLICATION TYPE
-                if result.get("type") is None or result.get("type") == []:
-                    if 'type' in message:
-                        if message['type']:
-                            result['type'] = [message['type'].replace('-', ' ')]
-                    else:
-                        result['type'] = []
-
-                # GET PUBLISHERS
-                '''
-                the aim is to retrieve a string in the format 'NAME [SCHEMA:ID]', for example, 'American Medical Association (AMA) [crossref:10]'. If the id does not exist, the output is only the name. Finally, if there is no publisher, the output is an empty string.
-                '''
-                if result.get("publisher") is None or result.get("publisher") == []:
-                    data = {
-                        'publisher': '',
-                        'member': None,
-                        'prefix': doi.split('/')[0]
-                    }
-                    for field in {'publisher', 'member'}:
-                        if field in message:
-                            if message[field]:
-                                data[field] = message[field]
-                    publisher = data['publisher']
-                    member = data['member']
-                    name_and_id = f'{publisher} [crossref:{member}]' if member else publisher
-
-                    result["publisher"] = [name_and_id]
+            # GET VOLUME
+            if result.get("volume") is None or result.get("volume") == "":
+                if 'volume' in message:
+                    result['volume'] = message['volume']
                 else:
-                    result["publisher"] = []
+                    result['volume'] = ""
+
+            # GET ISSUE
+            if result.get("issue") is None or result.get("issue") == "":
+                if 'issue' in message:
+                    result['issue'] = message['issue']
+                else:
+                    result['issue'] = ""
+
+
+            # GET PAGE
+            if result.get("page") is None or result.get("page") == "":
+                if 'page' in message:
+                    roman_letters = {'I', 'V', 'X', 'L', 'C', 'D', 'M'}
+                    pages_list = re.split('[^A-Za-z\d]+(?=[A-Za-z\d]+)', message['page'])
+                    clean_pages_list = list()
+                    for page in pages_list:
+                        # e.g. 583-584
+                        if all(c.isdigit() for c in page):
+                            clean_pages_list.append(page)
+                        # e.g. G27. It is a born digital document. PeerJ uses this approach, where G27 identifies the whole document, since it has no pages.
+                        elif len(pages_list) == 1:
+                            clean_pages_list.append(page)
+                        # e.g. iv-vii. This syntax is used in the prefaces.
+                        elif all(c.upper() in roman_letters for c in page):
+                            clean_pages_list.append(page)
+                        # 583b-584. It is an error. The b must be removed.
+                        elif any(c.isdigit() for c in page):
+                            page_without_letters = ''.join([c for c in page if c.isdigit()])
+                            clean_pages_list.append(page_without_letters)
+                    pages = '-'.join(clean_pages_list)
+                    result['page'] = pages
+                else:
+                    result['page'] = ""
+
+
+            # GET PUBLICATION TYPE
+            if result.get("type") is None or result.get("type") == []:
+                if 'type' in message:
+                    if message['type']:
+                        result['type'] = [message['type'].replace('-', ' ')]
+                else:
+                    result['type'] = []
+
+            # GET PUBLISHERS
+            '''
+            the aim is to retrieve a string in the format 'NAME [SCHEMA:ID]', for example, 'American Medical Association (AMA) [crossref:10]'. If the id does not exist, the output is only the name. Finally, if there is no publisher, the output is an empty string.
+            '''
+            if result.get("publisher") is None or result.get("publisher") == []:
+                data = {
+                    'publisher': '',
+                    'member': None,
+                    'prefix': doi.split('/')[0]
+                }
+                for field in {'publisher', 'member'}:
+                    if field in message:
+                        if message[field]:
+                            data[field] = message[field]
+                publisher = data['publisher']
+                member = data['member']
+                name_and_id = f'{publisher} [crossref:{member}]' if member else publisher
+
+                result["publisher"] = [name_and_id]
+            else:
+                result["publisher"] = []
 
         return result
 
@@ -457,7 +452,9 @@ class MetadataManager():
 
     def extract_from_medra(self, output_dict:dict) -> None:
         medra_processing = MedraProcessing()
-        return medra_processing.csv_creator(self.api_response)
+        output_dict['valid'] = True
+        output_dict.update(medra_processing.csv_creator(self.api_response))
+        return output_dict
 
     def extract_from_unknown(self, output_dict:dict) -> None:
         from oc_idmanager.support import call_api, extract_info

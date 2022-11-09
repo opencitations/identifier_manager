@@ -20,7 +20,7 @@ from datetime import datetime
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.orcid import ORCIDManager
 from oc_meta.lib.csvmanager import CSVManager
-from typing import List
+from typing import List, Tuple
 
 
 class MedraProcessing:
@@ -35,10 +35,25 @@ class MedraProcessing:
         br_type = self.get_br_type(xml_soup)
         return getattr(self, f"extract_from_{br_type.replace(' ', '_')}")(xml_soup)
     
+    def extract_from_book(self, xml_soup:BeautifulSoup) -> dict:
+        authors, editors = self.get_contributors(xml_soup)
+        return {
+            'title': self.get_title(xml_soup),
+            'author': authors,
+            'issue': '',
+            'volume': '',
+            'venue': '',
+            'pub_date': self.get_pub_date(xml_soup),
+            'pages': '',
+            'type': 'book',
+            'publisher': self.get_publisher(xml_soup),
+            'editor': editors
+        }
+
     def extract_from_journal_article(self, xml_soup:BeautifulSoup) -> dict:
         serial_publication = xml_soup.find('SerialPublication')
         serial_work = serial_publication.find('SerialWork')
-        publisher_name = serial_work.find('Publisher').find('PublisherName').get_text()
+        publisher_name = self.get_publisher(serial_work)
         serial_work_titles:List[BeautifulSoup] = serial_work.findAll('Title')
         for serial_work_title in serial_work_titles:
             if serial_work_title.find('TitleType').get_text() == '01':
@@ -55,15 +70,38 @@ class MedraProcessing:
         volume = journal_issue.find('JournalVolumeNumber').get_text()
         issue = journal_issue.find('JournalIssueNumber').get_text()
         content_item = xml_soup.find('ContentItem')
-        title = content_item.find('Title').find('TitleText').get_text()
         page_run = content_item.find('PageRun')
         pages = page_run.find('FirstPageNumber').get_text() + '-' + page_run.find('LastPageNumber').get_text()
-        contributors:List[BeautifulSoup] = content_item.findAll('Contributor')
+        authors, editors = self.get_contributors(xml_soup)
+        return {
+            'title': self.get_title(xml_soup),
+            'author': authors,
+            'issue': issue,
+            'volume': volume,
+            'venue': venue,
+            'pub_date': self.get_pub_date(content_item),
+            'pages': pages,
+            'type': 'journal article',
+            'publisher': publisher_name,
+            'editor': editors
+        }
+
+    def get_title(self, context:BeautifulSoup) -> str:
+        if context.find('DOISerialArticleWork'):
+            content_item = context.find('ContentItem')
+            return content_item.find('Title').find('TitleText').get_text()
+        elif context.find('DOIMonographicProduct'):
+            return context.find('Title').find('TitleText').get_text()
+    
+    def get_contributors(self, context:BeautifulSoup) -> Tuple[list, list]:
+        contributors:List[BeautifulSoup] = context.findAll('Contributor')
         authors = list(); editors = list()
         contributor_roles = {'A01': authors, 'B01': editors}
         for contributor in contributors:
             contributor_role = contributor.find('ContributorRole').get_text()
-            author = contributor.find('PersonNameInverted').get_text()
+            person_name_inverted = contributor.find('PersonNameInverted')
+            corporate_name = contributor.find('CorporateName')
+            author = person_name_inverted.get_text() if person_name_inverted else corporate_name.get_text()
             is_there_name_id = contributor.find('NameIdentifier')
             sequence_number = int(contributor.find('SequenceNumber').get_text())
             if is_there_name_id:
@@ -71,21 +109,21 @@ class MedraProcessing:
                 author += f' [{name_id}]'
             contributor_roles[contributor_role].append((sequence_number, author))
         contributor_roles = {k:[ra[1] for ra in sorted(v, key=lambda x:x[0])] for k,v in contributor_roles.items()}
-        pub_date = content_item.find('PublicationDate').get_text()
-        pub_date = datetime.strptime(pub_date, '%Y%m%d').strftime('%Y-%m-%d')
-        return {
-            'valid': True,
-            'title': title,
-            'author': contributor_roles['A01'],
-            'issue': issue,
-            'volume': volume,
-            'venue': venue,
-            'pub_date': pub_date,
-            'pages': pages,
-            'type': None,
-            'publisher': publisher_name,
-            'editor': contributor_roles['B01']
-        }
+        return contributor_roles['A01'], contributor_roles['B01']
+    
+    def get_pub_date(self, context:BeautifulSoup) -> str:
+        raw_date = context.find('PublicationDate').get_text()
+        try:
+            datetime_obj = datetime.strptime(raw_date, '%Y%m%d').strftime('%Y-%m-%d')
+        except ValueError:
+            try:
+                datetime_obj = datetime.strptime(raw_date, '%Y%m').strftime('%Y-%m')
+            except ValueError:
+                datetime_obj = datetime.strptime(raw_date, '%Y').strftime('%Y')
+        return datetime_obj
+    
+    def get_publisher(self, context:BeautifulSoup) -> str:
+        return context.find('Publisher').find('PublisherName').get_text()
     
     @classmethod
     def get_br_type(cls, xml_soup:BeautifulSoup) -> str:
