@@ -32,7 +32,11 @@ class MedraProcessing:
         self._om = ORCIDManager()
     
     def csv_creator(self, xml_soup:BeautifulSoup) -> dict:
-        br_type = self.get_br_type(xml_soup)
+        try:
+            br_type = self.get_br_type(xml_soup)
+        except UnboundLocalError:
+            print(xml_soup)
+            raise(UnboundLocalError)
         return getattr(self, f"extract_from_{br_type.replace(' ', '_')}")(xml_soup)
     
     def extract_from_book(self, xml_soup:BeautifulSoup) -> dict:
@@ -61,17 +65,19 @@ class MedraProcessing:
         serial_versions:List[BeautifulSoup] = serial_publication.findAll('SerialVersion')
         venue_ids = list()
         for serial_version in serial_versions:
-            if serial_version.find('ProductForm').get_text() in {'JD', 'JB'}:
-                issnid = self._issnm.normalise(serial_version.find('IDValue').get_text(), include_prefix=False)
-                if self._issnm.check_digit(issnid):
-                    venue_ids.append('issn:' + issnid)
-        venue = f"{venue_name} [{' '.join(venue_ids)}]"
+            product_id_type = serial_version.find('ProductIDType')
+            if serial_version.find('ProductForm').get_text() in {'JD', 'JB'} and product_id_type:
+                if product_id_type.get_text() == '07':
+                    issnid = self._issnm.normalise(serial_version.find('IDValue').get_text(), include_prefix=False)
+                    if self._issnm.check_digit(issnid):
+                        venue_ids.append('issn:' + issnid)
+        venue = f"{venue_name} [{' '.join(venue_ids)}]" if venue_ids else venue_name
         journal_issue = xml_soup.find('JournalIssue')
-        volume = journal_issue.find('JournalVolumeNumber').get_text()
-        issue = journal_issue.find('JournalIssueNumber').get_text()
+        volume = journal_issue.find('JournalVolumeNumber')
+        volume = volume.get_text() if volume else ''
+        issue = journal_issue.find('JournalIssueNumber')
+        issue = issue.get_text() if issue else ''
         content_item = xml_soup.find('ContentItem')
-        page_run = content_item.find('PageRun')
-        pages = page_run.find('FirstPageNumber').get_text() + '-' + page_run.find('LastPageNumber').get_text()
         authors, editors = self.get_contributors(xml_soup)
         return {
             'title': self.get_title(xml_soup),
@@ -80,60 +86,93 @@ class MedraProcessing:
             'volume': volume,
             'venue': venue,
             'pub_date': self.get_pub_date(content_item),
-            'pages': pages,
+            'pages': self.get_pages(content_item),
             'type': 'journal article',
             'publisher': publisher_name,
             'editor': editors
         }
 
     def get_title(self, context:BeautifulSoup) -> str:
-        if context.find('DOISerialArticleWork'):
+        if context.find('DOISerialArticleWork') or context.find('DOISerialArticleVersion'):
             content_item = context.find('ContentItem')
             return content_item.find('Title').find('TitleText').get_text()
-        elif context.find('DOIMonographicProduct'):
+        elif context.find('DOIMonographicProduct') or context.find('DOIMonographicWork'):
             return context.find('Title').find('TitleText').get_text()
     
     def get_contributors(self, context:BeautifulSoup) -> Tuple[list, list]:
         contributors:List[BeautifulSoup] = context.findAll('Contributor')
         authors = list(); editors = list()
-        contributor_roles = {'A01': authors, 'B01': editors}
-        for contributor in contributors:
-            contributor_role = contributor.find('ContributorRole').get_text()
+        contributor_roles = {'A': authors, 'B': editors}
+        for i, contributor in enumerate(contributors):
+            contributor_role = contributor.find('ContributorRole').get_text()[0]
             person_name_inverted = contributor.find('PersonNameInverted')
             corporate_name = contributor.find('CorporateName')
-            author = person_name_inverted.get_text() if person_name_inverted else corporate_name.get_text()
+            person_name = contributor.find('PersonName')
+            names_before_key = contributor.find('NamesBeforeKey')
+            key_names = contributor.find('KeyNames')
+            unnamed_persons = contributor.find('UnnamedPersons')
+            if person_name_inverted:
+                author = person_name_inverted.get_text()
+            elif names_before_key and key_names:
+                author = f'{key_names.get_text()}, {names_before_key.get_text()}'
+            elif corporate_name:
+                author = corporate_name.get_text()
+            elif person_name:
+                author = person_name.get_text()
+            elif unnamed_persons:
+                continue
+            else:
+                raise(ValueError('No author name'))
             is_there_name_id = contributor.find('NameIdentifier')
-            sequence_number = int(contributor.find('SequenceNumber').get_text())
+            sequence_number = contributor.find('SequenceNumber')
+            sequence_number = int(sequence_number.get_text()) if sequence_number else i
             if is_there_name_id:
                 name_id = self._om.normalise(is_there_name_id.find('IDValue').get_text(), include_prefix=True)
                 author += f' [{name_id}]'
             contributor_roles[contributor_role].append((sequence_number, author))
         contributor_roles = {k:[ra[1] for ra in sorted(v, key=lambda x:x[0])] for k,v in contributor_roles.items()}
-        return contributor_roles['A01'], contributor_roles['B01']
+        return contributor_roles['A'], contributor_roles['B']
     
     def get_pub_date(self, context:BeautifulSoup) -> str:
-        raw_date = context.find('PublicationDate').get_text()
+        raw_date = context.find('PublicationDate')
+        if not raw_date:
+            return ''
+        raw_date = raw_date.get_text()
         try:
-            datetime_obj = datetime.strptime(raw_date, '%Y%m%d').strftime('%Y-%m-%d')
+            clean_date = datetime.strptime(raw_date, '%Y%m%d').strftime('%Y-%m-%d')
         except ValueError:
             try:
-                datetime_obj = datetime.strptime(raw_date, '%Y%m').strftime('%Y-%m')
+                clean_date = datetime.strptime(raw_date, '%Y%m').strftime('%Y-%m')
             except ValueError:
-                datetime_obj = datetime.strptime(raw_date, '%Y').strftime('%Y')
-        return datetime_obj
+                clean_date = datetime.strptime(raw_date, '%Y').strftime('%Y')
+        return clean_date
+
+    def get_pages(self, context:BeautifulSoup) -> str:
+        page_run = context.find('PageRun')
+        if page_run:
+            starting_page = page_run.find('FirstPageNumber')
+            ending_page = page_run.find('LastPageNumber')
+            starting_page = starting_page.get_text() if starting_page else None
+            ending_page = ending_page.get_text() if ending_page else None
+            if starting_page and '-' in starting_page:
+                starting_page = f'"{starting_page}"'
+            if ending_page and '-' in ending_page:
+                ending_page = f'"{ending_page}"'
+            pages = f'{starting_page}-{ending_page}' if starting_page and ending_page else starting_page if starting_page else ''
+        else:
+            pages = ''
+        return pages
     
     def get_publisher(self, context:BeautifulSoup) -> str:
         return context.find('Publisher').find('PublisherName').get_text()
     
     @classmethod
     def get_br_type(cls, xml_soup:BeautifulSoup) -> str:
-        if xml_soup.find('DOIMonographicProduct'):
-            br_type = 'book'
-        elif xml_soup.find('DOIMonographicWork'):
+        if xml_soup.find('DOIMonographicProduct') or xml_soup.find('DOIMonographicWork'):
             br_type = 'book'
         elif xml_soup.find('DOIMonographChapterWork'):
             br_type = 'book chapter'
-        elif xml_soup.find('DOISerialArticleWork'):
+        elif xml_soup.find('DOISerialArticleWork') or xml_soup.find('DOISerialArticleVersion'):
             br_type = 'journal article'
         elif xml_soup.find('DOISerialIssueWork'):
             br_type = 'journal issue'

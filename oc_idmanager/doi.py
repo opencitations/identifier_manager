@@ -33,9 +33,15 @@ class DOIManager(IdentifierManager):
         """DOI manager constructor."""
         super(DOIManager,self).__init__()
         self._api = "https://doi.org/api/handles/"
+        self._api_airiti = ""
+        self._api_cnki = ""
         self._api_crossref = "https://api.crossref.org/works/"
         self._api_datacite = "https://api.datacite.org/dois/"
+        self._api_istic = ""
+        self._api_jalc = ""
+        self._api_kisti = ""
         self._api_medra = "https://api.medra.org/metadata/"
+        self._api_op = ""
         self._api_unknown = "https://doi.org/ra/"
         self._use_api_service = use_api_service
         self._p = "doi:"
