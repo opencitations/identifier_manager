@@ -31,48 +31,8 @@ class JalcProcessing:
 
     def csv_creator(self, item:dict) -> dict:
         data = item['data']
-        content_type = data['content_type']
-        if content_type == 'JA':
-            br_type = 'journal article'
-        elif content_type == 'BK':
-            br_type = 'book'
-        elif content_type == 'RD':
-            br_type = 'dataset'
-        elif content_type == 'EL':
-            br_type = 'other'
-        elif content_type == 'GD':
-            br_type = 'other'
         publisher = self.get_ja(data['publisher_list'])[0]['publisher_name'] if 'publisher_list' in data else ''
         title = self.get_ja(data['title_list'])[0]['title'] if 'title_list' in data else ''
-        authors = list()
-        if 'creator_list' in data:
-            for creator in data['creator_list']:
-                sequence = creator['sequence'] if 'sequence' in creator else ''
-                # creator_type = creator['type'] if 'type' in creator else ''
-                names = creator['names'] if 'names' in creator else ''
-                ja_name = self.get_ja(names)[0]
-                last_name = ja_name['last_name'] if 'last_name' in ja_name else ''
-                first_name = ja_name['first_name'] if 'first_name' in ja_name else ''
-                full_name = ''
-                if last_name:
-                    full_name += last_name
-                    if first_name:
-                        full_name += f', {first_name}'
-                if full_name:
-                    authors.append((sequence, full_name))
-        authors = [author[1] for author in sorted(authors, key=lambda x: x[0])]
-        pub_date_dict = data['publication_date'] if 'publication_date' in data else ''
-        pub_date_list = list()
-        year = pub_date_dict['publication_year'] if 'publication_year' in pub_date_dict else ''
-        if year:
-            pub_date_list.append(year)
-            month = pub_date_dict['publication_month'] if 'publication_month' in pub_date_dict else ''
-            if month:
-                pub_date_list.append(month)
-                day = pub_date_dict['publication_day'] if 'publication_day' in pub_date_dict else ''
-                if day:
-                    pub_date_list.append(day)
-        pub_date = '-'.join(pub_date_list)
         if 'journal_title_name_list' in data:
             venue = [item for item in self.get_ja(data['journal_title_name_list']) if item['type'] == 'full'][0]['journal_title_name']
         else:
@@ -90,13 +50,13 @@ class JalcProcessing:
                 pages += f'-{last_page}'
         return {
             'title': unicodedata.normalize('NFKC', title),
-            'author': unicodedata.normalize('NFKC', '; '.join(authors)),
+            'author': unicodedata.normalize('NFKC', '; '.join(self.get_authors(data))),
             'issue': unicodedata.normalize('NFKC', issue),
             'volume': unicodedata.normalize('NFKC', volume),
             'venue': unicodedata.normalize('NFKC', venue),
-            'pub_date': unicodedata.normalize('NFKC', pub_date),
+            'pub_date': unicodedata.normalize('NFKC', self.get_pub_date(data)),
             'pages': unicodedata.normalize('NFKC', pages),
-            'type': unicodedata.normalize('NFKC', br_type),
+            'type': unicodedata.normalize('NFKC', self.get_type(data)),
             'publisher': unicodedata.normalize('NFKC', publisher),
             'editor': unicodedata.normalize('NFKC', '')
         }
@@ -104,3 +64,52 @@ class JalcProcessing:
     @classmethod
     def get_ja(cls, field:list) -> list:
         return [item for item in field if item['lang'] == 'ja']
+    
+    def get_authors(self, data:dict) -> list:
+        authors = list()
+        if 'creator_list' in data:
+            for creator in data['creator_list']:
+                sequence = creator['sequence'] if 'sequence' in creator else ''
+                # creator_type = creator['type'] if 'type' in creator else ''
+                names = creator['names'] if 'names' in creator else ''
+                ja_name = self.get_ja(names)[0]
+                last_name = ja_name['last_name'] if 'last_name' in ja_name else ''
+                first_name = ja_name['first_name'] if 'first_name' in ja_name else ''
+                full_name = ''
+                if last_name:
+                    full_name += last_name
+                    if first_name:
+                        full_name += f', {first_name}'
+                if full_name:
+                    authors.append((sequence, full_name))
+        return [author[1] for author in sorted(authors, key=lambda x: x[0])]
+
+    @classmethod
+    def get_type(cls, data:dict) -> str:
+        content_type = data['content_type']
+        if content_type == 'JA':
+            br_type = 'journal article'
+        elif content_type == 'BK':
+            br_type = 'book'
+        elif content_type == 'RD':
+            br_type = 'dataset'
+        elif content_type == 'EL':
+            br_type = 'other'
+        elif content_type == 'GD':
+            br_type = 'other'
+        return br_type
+    
+    @classmethod
+    def get_pub_date(cls, data) -> str:
+        pub_date_dict = data['publication_date'] if 'publication_date' in data else ''
+        pub_date_list = list()
+        year = pub_date_dict['publication_year'] if 'publication_year' in pub_date_dict else ''
+        if year:
+            pub_date_list.append(year)
+            month = pub_date_dict['publication_month'] if 'publication_month' in pub_date_dict else ''
+            if month:
+                pub_date_list.append(month)
+                day = pub_date_dict['publication_day'] if 'publication_day' in pub_date_dict else ''
+                if day:
+                    pub_date_list.append(day)
+        return '-'.join(pub_date_list)
