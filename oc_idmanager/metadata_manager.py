@@ -16,6 +16,7 @@
 
 from bs4 import BeautifulSoup
 from medra_processing import MedraProcessing
+from jalc_processing import JalcProcessing
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.orcid import ORCIDManager
@@ -457,7 +458,10 @@ class MetadataManager():
         return result
 
     def extract_from_jalc(self, output_dict:dict) -> None:
-        pass
+        jalc_processing = JalcProcessing()
+        output_dict['valid'] = True
+        output_dict.update(jalc_processing.csv_creator(self.api_response))
+        return output_dict
 
     def extract_from_kisti(self, output_dict:dict) -> None:
         pass

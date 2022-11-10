@@ -38,7 +38,7 @@ class DOIManager(IdentifierManager):
         self._api_crossref = "https://api.crossref.org/works/"
         self._api_datacite = "https://api.datacite.org/dois/"
         self._api_istic = ""
-        self._api_jalc = ""
+        self._api_jalc = "https://api.japanlinkcenter.org/dois/"
         self._api_kisti = ""
         self._api_medra = "https://api.medra.org/metadata/"
         self._api_op = ""
