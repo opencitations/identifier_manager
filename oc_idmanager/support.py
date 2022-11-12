@@ -16,12 +16,15 @@
 
 
 from __future__ import annotations
-from bs4 import BeautifulSoup
+
 from json import loads
-from oc_idmanager.metadata_manager import MetadataManager
-from requests import get, ReadTimeout
-from requests.exceptions import ConnectionError
 from time import sleep
+
+from bs4 import BeautifulSoup
+from requests import ReadTimeout, get
+from requests.exceptions import ConnectionError
+
+from oc_idmanager.metadata_manager import MetadataManager
 
 
 def call_api(url:str, headers:str, r_format:str="json") -> dict|None:

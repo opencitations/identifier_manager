@@ -15,13 +15,14 @@
 # SOFTWARE.
 
 
-from re import sub, match
-from urllib.parse import unquote, quote
-from requests import get
 from json import loads
-from requests import ReadTimeout
-from requests.exceptions import ConnectionError
+from re import match, sub
 from time import sleep
+from urllib.parse import unquote
+
+from requests import ReadTimeout, get
+from requests.exceptions import ConnectionError
+
 from oc_idmanager.base import IdentifierManager
 
 

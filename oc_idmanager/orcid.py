@@ -13,14 +13,16 @@
 # DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
+
+
 import re
-from re import sub, match
-from urllib.parse import quote
-from requests import get
 from json import loads
-from requests import ReadTimeout
-from requests.exceptions import ConnectionError
+from re import match, sub
 from time import sleep
+from urllib.parse import quote
+
+from requests import ReadTimeout, get
+from requests.exceptions import ConnectionError
 
 from oc_idmanager.base import IdentifierManager
 

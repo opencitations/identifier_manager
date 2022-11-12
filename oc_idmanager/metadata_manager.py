@@ -14,16 +14,18 @@
 # SOFTWARE.
 
 
-from bs4 import BeautifulSoup
-from medra_processing import MedraProcessing
-from jalc_processing import JalcProcessing
-from oc_idmanager.issn import ISSNManager
-from oc_idmanager.isbn import ISBNManager
-from oc_idmanager.orcid import ORCIDManager
-from typing import List, Tuple
-from urllib.parse import quote
 import html
 import re
+from typing import List, Tuple
+from urllib.parse import quote
+
+from bs4 import BeautifulSoup
+from oc_meta.plugins.jalc.jalc_processing import JalcProcessing
+from oc_meta.plugins.medra.medra_processing import MedraProcessing
+
+from oc_idmanager.isbn import ISBNManager
+from oc_idmanager.issn import ISSNManager
+from oc_idmanager.orcid import ORCIDManager
 
 
 class MetadataManager():

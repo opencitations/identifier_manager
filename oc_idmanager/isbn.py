@@ -15,9 +15,10 @@
 # SOFTWARE.
 
 
-from oc_idmanager.base import IdentifierManager
-from re import sub, match
 import re
+from re import match, sub
+
+from oc_idmanager.base import IdentifierManager
 
 
 class ISBNManager(IdentifierManager):

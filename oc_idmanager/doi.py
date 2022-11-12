@@ -16,14 +16,16 @@
 
 
 from __future__ import annotations
+
+import re
+from re import match, sub
+from urllib.parse import quote, unquote
+
 from oc_idmanager.base import IdentifierManager
-from oc_idmanager.issn import ISSNManager
 from oc_idmanager.isbn import ISBNManager
+from oc_idmanager.issn import ISSNManager
 from oc_idmanager.orcid import ORCIDManager
 from oc_idmanager.support import call_api, extract_info
-from re import sub, match
-from urllib.parse import unquote, quote
-import re
 
 
 class DOIManager(IdentifierManager):

@@ -13,8 +13,11 @@
 # DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
+
+
 import re
-from re import sub, match
+from re import match, sub
+
 from oc_idmanager.base import IdentifierManager
 
 

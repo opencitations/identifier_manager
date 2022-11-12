@@ -18,7 +18,8 @@
 import json
 import unittest
 from os import makedirs
-from os.path import join, exists
+from os.path import exists, join
+
 from oc_idmanager import *
 from oc_idmanager.url import URLManager
 
