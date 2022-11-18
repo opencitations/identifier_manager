@@ -44,6 +44,7 @@ class DOIManager(IdentifierManager):
         self._api_kisti = ""
         self._api_medra = "https://api.medra.org/metadata/"
         self._api_op = ""
+        self._api_public = ""
         self._api_unknown = "https://doi.org/ra/"
         self._use_api_service = use_api_service
         self._p = "doi:"
@@ -103,7 +104,8 @@ class DOIManager(IdentifierManager):
                             r_format = "xml" if allow_extra_api == "medra" else "json"
                             extra_api_result = call_api(url=getattr(self, f'_api_{allow_extra_api}') + quote(doi), headers=self._headers, r_format=r_format)
                             if extra_api_result:
-                                extra_info = extract_info(extra_api_result, allow_extra_api, result)
+                                extra_info = extract_info(extra_api_result, allow_extra_api)
+                                extra_info['id'] = doi
                                 return valid_bool, extra_info
                             else:
                                 return valid_bool, {'valid': valid_bool}

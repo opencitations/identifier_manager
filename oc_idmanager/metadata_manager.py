@@ -14,14 +14,11 @@
 # SOFTWARE.
 
 
-from oc_meta.plugins.crossref.crossref_processing import CrossrefProcessing
-from oc_meta.plugins.datacite.datacite_processing import DataCiteProcessing
-from oc_meta.plugins.medra.medra_processing import MedraProcessing
-from oc_meta.plugins.jalc.jalc_processing import JalcProcessing
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.orcid import ORCIDManager
 from urllib.parse import quote
+import importlib
 
 
 class MetadataManager():
@@ -33,58 +30,31 @@ class MetadataManager():
         self._om = ORCIDManager()
         from oc_idmanager.doi import DOIManager
         self.doi_manager = DOIManager()
+        self._have_api = ['crossref', 'datacite', 'medra', 'jalc']
 
-    def extract_metadata(self, output_dict:dict) -> None:
+    def extract_metadata(self) -> None:
+        metadata = {'ra': self.metadata_provider}
         if self.metadata_provider is None or self.api_response is None:
-            return output_dict
-        return eval(f'self.extract_from_{self.metadata_provider}({output_dict})')
+            return metadata
+        if self.metadata_provider == 'unknown':
+            return self.extract_from_unknown()
+        elif self.metadata_provider in self._have_api:
+            module = importlib.import_module(f'oc_meta.plugins.{self.metadata_provider}.{self.metadata_provider}_processing')
+            class_ = getattr(module, f'{self.metadata_provider.title()}Processing')
+            metadata_processor = class_()
+            api_response = self.api_response['data'] if self.metadata_provider == 'datacite' else self.api_response
+            metadata.update(getattr(metadata_processor, 'csv_creator')(api_response))                
+        return metadata
 
-    def extract_from_airiti(self, output_dict:dict) -> None:
-        pass
-
-    def extract_from_cnki(self, output_dict:dict) -> None:
-        pass
-    
-    def extract_from_crossref(self, output_dict:dict) -> None:
-        crossref_processing = CrossrefProcessing()
-        output_dict['valid'] = True
-        output_dict.update(crossref_processing.csv_creator(self.api_response))
-        return output_dict
-
-    def extract_from_datacite(self, output_dict:dict) -> None:
-        datacite_processing = DataCiteProcessing()
-        output_dict['valid'] = True
-        output_dict.update(datacite_processing.csv_creator(self.api_response['data']))
-        return output_dict
-
-    def extract_from_jalc(self, output_dict:dict) -> None:
-        jalc_processing = JalcProcessing()
-        output_dict['valid'] = True
-        output_dict.update(jalc_processing.csv_creator(self.api_response))
-        return output_dict
-
-    def extract_from_kisti(self, output_dict:dict) -> None:
-        pass
-
-    def extract_from_medra(self, output_dict:dict) -> None:
-        medra_processing = MedraProcessing()
-        output_dict['valid'] = True
-        output_dict.update(medra_processing.csv_creator(self.api_response))
-        return output_dict
-
-    def extract_from_istic(self, output_dict:dict) -> None:
-        pass
-
-    def extract_from_op(self, output_dict:dict) -> None:
-        pass
-
-    def extract_from_unknown(self, output_dict:dict) -> None:
+    def extract_from_unknown(self) -> None:
         from oc_idmanager.support import call_api, extract_info
         registration_agency = self.api_response[0]['RA'].lower()
+        metadata = {'ra': registration_agency}
         doi = self.api_response[0]['DOI']
         api_registration_agency = getattr(self.doi_manager, f'_api_{registration_agency}')
         if api_registration_agency:
             url = api_registration_agency + quote(doi)
             r_format = 'xml' if registration_agency == 'medra' else 'json'
             extra_api_result = call_api(url=url, headers=self.doi_manager._headers, r_format=r_format)
-            return extract_info(extra_api_result, registration_agency, output_dict)
+            metadata.update(extract_info(extra_api_result, registration_agency))
+        return metadata

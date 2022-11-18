@@ -42,9 +42,9 @@ def call_api(url:str, headers:str, r_format:str="json") -> dict|None:
             sleep(5)
     return None
 
-def extract_info(api_response:dict, choose_api:str|None=None, info_dict:dict=dict()) -> dict:
+def extract_info(api_response:dict, choose_api:str|None=None) -> dict:
     from oc_idmanager.metadata_manager import MetadataManager
-    info_dict["valid"] = True
+    info_dict = {'valid': True}
     metadata_manager = MetadataManager(metadata_provider=choose_api, api_response=api_response)
-    info_dict = metadata_manager.extract_metadata(info_dict)
+    info_dict.update(metadata_manager.extract_metadata())
     return info_dict
