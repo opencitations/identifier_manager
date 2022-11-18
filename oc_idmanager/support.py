@@ -16,15 +16,11 @@
 
 
 from __future__ import annotations
-
-from json import loads
-from time import sleep
-
 from bs4 import BeautifulSoup
-from requests import ReadTimeout, get
+from json import loads
+from requests import get, ReadTimeout
 from requests.exceptions import ConnectionError
-
-from oc_idmanager.metadata_manager import MetadataManager
+from time import sleep
 
 
 def call_api(url:str, headers:str, r_format:str="json") -> dict|None:
@@ -47,6 +43,7 @@ def call_api(url:str, headers:str, r_format:str="json") -> dict|None:
     return None
 
 def extract_info(api_response:dict, choose_api:str|None=None, info_dict:dict=dict()) -> dict:
+    from oc_idmanager.metadata_manager import MetadataManager
     info_dict["valid"] = True
     metadata_manager = MetadataManager(metadata_provider=choose_api, api_response=api_response)
     info_dict = metadata_manager.extract_metadata(info_dict)
