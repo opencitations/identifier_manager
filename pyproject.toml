@@ -11,7 +11,7 @@ beautifulsoup4 = "^4.11.1"
 requests = "^2.28.1"
 lxml = "^4.9.1"
 validators = "^0.20.0"
-oc-meta = "1.2.1"
+oc-meta = "1.2.2"
 
 [tool.poetry.dev-dependencies]
 coverage = "^6.4.4"
