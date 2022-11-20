@@ -316,7 +316,7 @@ class IdentifierManagerTest(unittest.TestCase):
         with self.subTest(msg="get_extra_info=True, allow_extra_api=None"):
             doi_manager = DOIManager()
             output = doi_manager.exists('10.1007/s11192-022-04367-w', get_extra_info=True, allow_extra_api=None)
-            expected_output = (True, {'valid': True, 'ra': None})
+            expected_output = (True, {'id': '10.1007/s11192-022-04367-w', 'valid': True, 'ra': 'unknown'})
             self.assertEqual(output, expected_output)
         with self.subTest(msg="get_extra_info=False, allow_extra_api=None"):
             doi_manager = DOIManager()

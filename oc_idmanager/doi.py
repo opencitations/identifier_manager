@@ -21,11 +21,13 @@ import re
 from re import match, sub
 from urllib.parse import quote, unquote
 
+from oc_meta.plugins.metadata_manager import MetadataManager
+
 from oc_idmanager.base import IdentifierManager
 from oc_idmanager.isbn import ISBNManager
 from oc_idmanager.issn import ISSNManager
 from oc_idmanager.orcid import ORCIDManager
-from oc_idmanager.support import call_api, extract_info
+from oc_idmanager.support import call_api
 
 
 class DOIManager(IdentifierManager):
@@ -97,20 +99,20 @@ class DOIManager(IdentifierManager):
                 if json_res:
                     valid_bool = json_res.get("responseCode") == 1
                     if get_extra_info:
-                        result = extract_info(json_res)
+                        extra_info = {'id': doi, 'valid': valid_bool, 'ra': 'unknown'}
                         if allow_extra_api is None:
-                            return valid_bool, result
+                            return valid_bool, extra_info
                         elif valid_bool is True and allow_extra_api:
                             r_format = "xml" if allow_extra_api == "medra" else "json"
                             extra_api_result = call_api(url=getattr(self, f'_api_{allow_extra_api}') + quote(doi), headers=self._headers, r_format=r_format)
                             if extra_api_result:
-                                extra_info = extract_info(extra_api_result, allow_extra_api)
-                                extra_info['id'] = doi
+                                metadata_manager = MetadataManager(allow_extra_api, json_res)
+                                extra_info.update(metadata_manager.extract_metadata())
                                 return valid_bool, extra_info
                             else:
-                                return valid_bool, {'valid': valid_bool}
+                                return valid_bool, {'id': doi, 'valid': valid_bool, 'ra': 'unknown'}
                     return valid_bool
                 valid_bool = False
         if get_extra_info:
-            return valid_bool, {"valid": valid_bool}
+            return valid_bool, {'id': doi, 'valid': valid_bool, 'ra': 'unknown'}
         return valid_bool

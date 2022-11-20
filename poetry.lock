@@ -267,7 +267,7 @@ python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
 
 [[package]]
 name = "oc-meta"
-version = "1.2.2"
+version = "1.2.3"
 description = "OpenCitations Meta contains bibliographic metadata associated with the documents involved in the citations stored in the OpenCitations infrastructure. The OpenCitations Meta Software performs two main actions: a data curation of the provided CSV files and the generation of new RDF files compliant with the OpenCitations Data Model."
 category = "main"
 optional = false
@@ -278,7 +278,7 @@ argparse = ">=1.4.0,<2.0.0"
 beautifulsoup4 = ">=4.11.1,<5.0.0"
 filelock = ">=3.6.0,<4.0.0"
 lxml = "4.9.1"
-oc-idmanager = "0.2.3"
+oc-idmanager = "0.2.4"
 oc-ocdm = "7.1.2"
 Pebble = ">=4.6.3,<5.0.0"
 psutil = ">=5.9.0,<6.0.0"
@@ -681,7 +681,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.4"
-content-hash = "e9515f638f614ba5aa826a48ffd60e31b475d9a447d82ebe723b90d234b51be3"
+content-hash = "1552f5d6eaabe157a07d2835673f57846b76a22736b9605c5078918029df7600"
 
 [metadata.files]
 antlr4-python3-runtime = []
