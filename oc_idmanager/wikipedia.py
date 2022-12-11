@@ -57,7 +57,7 @@ class WikipediaManager(IdentifierManager):
                 return self._data[wikipedia_id].get("valid"), self._data[wikipedia_id]
             return self._data[wikipedia_id].get("valid")
 
-    def normalise(self, id_string, include_prefix=False):  # da cambiare
+    def normalise(self, id_string, include_prefix=False):
 
         try:
             if include_prefix:
@@ -86,9 +86,6 @@ class WikipediaManager(IdentifierManager):
 
     def exists(self, wikipedia_id_full, get_extra_info=False, allow_extra_api=None):
         valid_bool = True
-
-        # -------------------------------------controlla
-
         if self._use_api_service:
             wikipedia_id = self.normalise(wikipedia_id_full)
             if wikipedia_id is not None:
@@ -96,41 +93,21 @@ class WikipediaManager(IdentifierManager):
                 while tentative:
                     tentative -= 1
                     try:
-                        # # TO GET BASIC (STRUCTURED) INFO ABOUT THE PAGE
                         query_params = {
                             "action": "query",
-                            # "titles": wikipedia_id,  # use this if the id input by the user is the page TITLE
-                            "pageids" : wikipedia_id, # use this if the id input by the user is the PAGE ID
+                            "pageids" : wikipedia_id,
                             "format": "json",
-                            "formatversion": "1", # stabe and default version so far, but v.2 might become default in the future. see https://www.mediawiki.org/wiki/API:JSON_version_2
-                            # "prop": "pageprops",
-                            # "prop": "info", # alternative to '"prop": "pageprops",' (line above)
-                            # "ppprop": "disambiguation",
-                            # "redirects": "1", # how does it work?
-                            # boolean: if the param is specified, it means it is set to True, regardless of its value; to set it to False, just omit it!
+                            "formatversion": "1",  # format of json output (current version 1; might be replaced w/ v.2)
                         }
-
-                        # TO GET FULL (PARSED) CONTENT OF THE PAGE
-                        # query_params = {
-                        #     "action": "parse",
-                        #     #"page": wikipedia_id, # use this if the id input by the user is the page TITLE
-                        #     "pageid" : wikipedia_id, # use this if the id input by the user is the PAGE ID
-                        #     "format": "json",
-                        # }
-
 
                         r = get(self._api, params=query_params, headers=self._headers, timeout=30)  # controlla
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
-                            print(json_res)
-                            # valid_bool = True  # poi togli e sostituisci il return corretto (da scrivere condizioni per cui sia True)
                             if get_extra_info:
                                 return True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False, self.extra_info(json_res)
                             return True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False
 
-                            # valid data --> True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False # for format version 1 (stable and currently default)
-                            # valid data --> True if 'title' in json_res['query']['pages'][0].keys() else False # for format version 2
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:
                                 return False, {"valid": False}
