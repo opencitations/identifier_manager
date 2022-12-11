@@ -73,7 +73,7 @@ class WikidataManager(IdentifierManager):
     def syntax_ok(self, id_string):
 
         if not id_string.startswith("wikidata:"):
-            id_string = "wikidata:"+id_string
+            id_string = self._p + id_string
         return True if match("^wikidata:Q[1-9]\\d*$", id_string) else False
 
     def exists(self, wikidata_id_full, get_extra_info=False, allow_extra_api=None):
