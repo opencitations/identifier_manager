@@ -70,6 +70,10 @@ class IdentifierManagerTest(unittest.TestCase):
         self.invalid_wikidata_1 = "Q34433Q345"
         self.invalid_wikidata_3 = "Q12"  # not existing yet
 
+        self.valid_wikipedia_1 = "30456"
+        self.valid_wikipedia_2 = "43744177" # category page
+        self.invalid_wikipedia_1 = "01267548"
+        self.invalid_wikipedia_2 = "Berlin_Wall"
 
         self.valid_url_1 = "https://datacite.org/"
         self.valid_url_2 = "opencitations.net"
@@ -77,6 +81,74 @@ class IdentifierManagerTest(unittest.TestCase):
         self.valid_url_4 = "https://it.wikipedia.org/wiki/Muro di Berlino"
         self.invalid_url_1 = "https://www.nih.gov/invalid_url"
         self.invalid_url_2 = "opencitations.net/not a real page .org"  # not existing yet
+
+        self.valid_ror_1 = "https://ror.org/040jc3p57"
+        self.valid_ror_2 = "01111rn36"
+        self.invalid_ror_1 = "la673822"
+        self.invalid_ror_2 = ".org/560jc3p57"
+
+        self.valid_viaf_1 = "5604148947771454950004"
+        self.valid_viaf_2 = "234145033"
+        self.invalid_viaf_1 = "012517637138"
+        self.invalid_viaf_2 = "https://viaf.org/viaf/234145033/"
+
+        self.valid_pmcid_1 = "PMC8384044"
+        self.valid_pmcid_2 = "6716460"
+        self.invalid_pmcid_1 = "0128564"
+        self.invalid_pmcid_2 = "PMC6716"
+    
+    def test_pmcid_normalise(self):
+        pcm = PMCIDManager()
+        self.assertEqual(
+            pcm.normalise(self.valid_pmcid_1),
+            pcm.normalise(' ' + self.valid_pmcid_1),
+        )
+        self.assertEqual(
+            pcm.normalise(self.invalid_pmcid_2),
+            pcm.normalise("https://" + self.invalid_pmcid_2),
+        )
+
+    def test_pmcid_is_valid(self):
+        pcm = PMCIDManager()
+        self.assertTrue(pcm.is_valid(self.valid_pmcid_1))
+        self.assertTrue(pcm.is_valid(self.valid_pmcid_2))
+        self.assertFalse(pcm.is_valid(self.invalid_pmcid_1))
+        self.assertFalse(pcm.is_valid(self.invalid_pmcid_2))
+    def test_viaf_normalise(self):
+        vm = ViafManager()
+        self.assertEqual(
+            vm.normalise(self.valid_viaf_1),
+            vm.normalise(' ' + self.valid_viaf_1),
+        )
+        self.assertEqual(
+            vm.normalise(self.invalid_viaf_2),
+            vm.normalise("https://" + self.invalid_viaf_2),
+        )
+
+    def test_viaf_is_valid(self):
+        vm = ViafManager()
+        self.assertTrue(vm.is_valid(self.valid_viaf_1))
+        self.assertTrue(vm.is_valid(self.valid_viaf_2))
+        self.assertFalse(vm.is_valid(self.invalid_viaf_1))
+        self.assertFalse(vm.is_valid(self.invalid_viaf_2))
+        
+    def test_ror_normalise(self):
+        um = URLManager()
+        self.assertEqual(
+            um.normalise(self.valid_ror_1),
+            um.normalise(self.valid_ror_1.replace("https://", "")),
+        )
+        self.assertEqual(
+            um.normalise(self.invalid_ror_2),
+            um.normalise("https://" + self.invalid_ror_2),
+        )
+
+    def test_ror_is_valid(self):
+        ror = RORManager()
+        self.assertTrue(ror.is_valid(self.valid_ror_1))
+        self.assertTrue(ror.is_valid(self.valid_ror_2))
+        self.assertFalse(ror.is_valid(self.invalid_ror_1))
+        self.assertFalse(ror.is_valid(self.invalid_ror_2))
 
     def test_url_normalise(self):
         um = URLManager()
@@ -271,6 +343,41 @@ class IdentifierManagerTest(unittest.TestCase):
         self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_1, include_prefix=True))))
         self.assertTrue(im_file.is_valid((im_file.normalise(self.valid_isbn_2, include_prefix=True))))
         self.assertFalse(im_file.is_valid((im_file.normalise(self.invalid_isbn_2, include_prefix=True))))
+
+    def test_wikipedia_normalise(self):
+        wpm = WikipediaManager()
+        self.assertTrue(
+            self.valid_wikipedia_1,
+            wpm.normalise("30456")
+        )
+        self.assertTrue(
+            self.valid_wikipedia_2,
+            wpm.normalise(self.valid_wikipedia_2)
+        )
+        self.assertTrue(
+            self.valid_wikipedia_2,
+            wpm.normalise("wikipedia" + self.valid_wikipedia_2)
+        )
+
+    def test_wikipedia_is_valid(self):
+        wpm = WikipediaManager()
+        self.assertTrue(wpm.is_valid(self.valid_wikipedia_1))
+        self.assertTrue(wpm.is_valid(self.valid_wikipedia_2))
+        self.assertFalse(wpm.is_valid(self.invalid_wikipedia_1))
+        self.assertFalse(wpm.is_valid(self.invalid_wikipedia_2))
+
+        wdm_file = WikidataManager(self.data)
+        self.assertTrue(wdm_file.normalise(self.valid_wikipedia_1, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.normalise(self.valid_wikipedia_2, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.normalise(self.invalid_wikipedia_1, include_prefix=True) in self.data)
+        self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikipedia_1, include_prefix=True))))
+        self.assertTrue(wdm_file.is_valid((wdm_file.normalise(self.valid_wikipedia_2, include_prefix=True))))
+        self.assertFalse(wdm_file.is_valid((wdm_file.normalise(self.invalid_wikipedia_1, include_prefix=True))))
+
+        clean_data = {}
+        wdm_nofile_noapi = WikidataManager(clean_data, use_api_service=False)
+        self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikipedia_1))
+        self.assertTrue(wdm_nofile_noapi.is_valid(self.valid_wikipedia_2))
 
     def test_wikidata_normalise(self):
         wdm = WikidataManager()

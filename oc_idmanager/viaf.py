@@ -67,7 +67,7 @@ class ViafManager(IdentifierManager):
                 viaf_string.strip(),
             )
         except:
-            # Any error in processing the DOI will return None
+            # Any error in processing the VIAF will return None
             return None
 
     def syntax_ok(self, id_string):

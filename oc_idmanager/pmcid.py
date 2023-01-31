@@ -79,6 +79,7 @@ class PMCIDManager(IdentifierManager):
 
         if not id_string.startswith("pmcid:"):
             id_string = self._p + id_string
+            # the regex admits the prefix (PMC) and version number suffix (a dot followed by a number of max 2 digits)
         return True if match(r"^pmcid:(PMC)?[1-9]\d+(\.\d{1,2})?$", id_string) else False
 
     def exists(self, pmcid_full, get_extra_info=False, allow_extra_api=None):
