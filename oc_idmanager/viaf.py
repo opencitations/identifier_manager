@@ -49,19 +49,20 @@ class ViafManager(IdentifierManager):
                     self._data[viaf_id] = info[1]
                     return (info[0] and self.syntax_ok(viaf_id)), info[1]
                 self._data[viaf_id] = dict()
-                self._data[viaf_id]["valid"] = True if self.exists(viaf_id) and self.syntax_ok(viaf_id) else False
-                return self.exists(viaf_id) and self.syntax_ok(viaf_id)
+                self._data[viaf_id]["valid"] = True if (self.exists(viaf_id) and self.syntax_ok(viaf_id)) else False
+                return self._data[viaf_id].get("valid")
             if get_extra_info:
                 return self._data[viaf_id].get("valid"), self._data[viaf_id]
             return self._data[viaf_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
-        id_string = id_string.upper()
         try:
-            viaf_string = sub(
-                "\0+", "", sub("\s+", "", unquote(id_string))
-            )
+            if id_string.startswith(self._p):
+                viaf_string = id_string[len(self._p):]
+            else:
+                viaf_string = id_string
+
+            viaf_string = sub("\0+", "", sub("[^0-9]", "", unquote(viaf_string)))
             return "%s%s" % (
                 self._p if include_prefix else "",
                 viaf_string.strip(),
@@ -90,9 +91,18 @@ class ViafManager(IdentifierManager):
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
                             if get_extra_info:
-                                return True if json_res['viafID'] == str(
-                                    viaf_id) else False, self.extra_info(json_res)
-                            return True if json_res['viafID'] == str(viaf_id) else False
+                                extra_info_result = {}
+                                try:
+                                    result = True if json_res['viafID'] == str(viaf_id) else False
+                                    extra_info_result["valid"] = result
+                                    return result, extra_info_result
+                                except KeyError:
+                                    extra_info_result["valid"] = False
+                                    return False, extra_info_result
+                            try:
+                                return True if json_res['viafID'] == str(viaf_id) else False
+                            except KeyError:
+                                return False
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:
                                 return False, {"valid": False}

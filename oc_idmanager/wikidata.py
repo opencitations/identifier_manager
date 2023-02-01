@@ -40,7 +40,7 @@ class WikidataManager(IdentifierManager):
     def is_valid(self, wikidata_id, get_extra_info=False):
         wikidata_id = self.normalise(wikidata_id, include_prefix=True)
 
-        if wikidata_id is None or not self.syntax_ok(wikidata_id):
+        if wikidata_id is None:
             return False
         else:
             if wikidata_id not in self._data or self._data[wikidata_id] is None:
@@ -49,25 +49,26 @@ class WikidataManager(IdentifierManager):
                     self._data[wikidata_id] = info[1]
                     return (info[0] and self.syntax_ok(wikidata_id)), info[1]
                 self._data[wikidata_id] = dict()
-                self._data[wikidata_id]["valid"] = True if self.exists(wikidata_id) and self.syntax_ok(wikidata_id) else False
-                return self.exists(wikidata_id) and self.syntax_ok(wikidata_id)
+                self._data[wikidata_id]["valid"] = True if (self.exists(wikidata_id) and self.syntax_ok(wikidata_id)) else False
+                return self._data[wikidata_id].get("valid")
             if get_extra_info:
                 return self._data[wikidata_id].get("valid"), self._data[wikidata_id]
             return self._data[wikidata_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
-        id_string = id_string.upper()
         try:
-            wikidata_string = sub(
-                "\0+", "", sub("\s+", "", unquote(id_string[id_string.index("Q"):]))
-            )
+            if id_string.startswith(self._p):
+                wikidata_string = id_string[len(self._p):]
+            else:
+                wikidata_string = id_string
+
+            wikidata_string = sub("\0+", "", sub("[^Q0-9]", "", unquote(wikidata_string).upper()))
             return "%s%s" % (
                 self._p if include_prefix else "",
                 wikidata_string.strip(),
             )
         except:
-            # Any error in processing the DOI will return None
+            # Any error in processing the Q-ID will return None
             return None
 
     def syntax_ok(self, id_string):
@@ -90,9 +91,21 @@ class WikidataManager(IdentifierManager):
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
                             if get_extra_info:
-                                return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(
-                                    wikidata_id) else False, self.extra_info(json_res)
-                            return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
+                                extra_info_result = {}
+                                try:
+                                    result = True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
+                                    extra_info_result['valid'] = result
+                                    return result, extra_info_result
+                                except KeyError:
+                                    extra_info_result["valid"] = False
+                                    return False, extra_info_result
+                                # return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(
+                                #     wikidata_id) else False, self.extra_info(json_res)
+                            try:
+                                return True if json_res['entities'][f"{wikidata_id}"]['id'] == str(wikidata_id) else False
+                            except KeyError:
+                                return False
+
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:
                                 return False, {"valid": False}

@@ -41,7 +41,7 @@ class WikipediaManager(IdentifierManager):
 
         wikipedia_id = self.normalise(wikipedia_id, include_prefix=True)
 
-        if wikipedia_id is None or not self.syntax_ok(wikipedia_id):
+        if wikipedia_id is None:
             return False
         else:
             if wikipedia_id not in self._data or self._data[wikipedia_id] is None:
@@ -50,26 +50,21 @@ class WikipediaManager(IdentifierManager):
                     self._data[wikipedia_id] = info[1]
                     return (info[0] and self.syntax_ok(wikipedia_id)), info[1]
                 self._data[wikipedia_id] = dict()
-                self._data[wikipedia_id]["valid"] = True if self.exists(wikipedia_id) and self.syntax_ok(
-                    wikipedia_id) else False
-                return self.exists(wikipedia_id) and self.syntax_ok(wikipedia_id)
+                self._data[wikipedia_id]["valid"] = True if (self.exists(wikipedia_id) and self.syntax_ok(
+                    wikipedia_id)) else False
+                return self._data[wikipedia_id].get("valid")
             if get_extra_info:
                 return self._data[wikipedia_id].get("valid"), self._data[wikipedia_id]
             return self._data[wikipedia_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
         try:
-            if include_prefix:
-                wikipedia_string = sub(
-
-                    "\0+", "", sub("\s+", "", unquote(id_string[(id_string.index("wikipedia:") + 1):]))
-
-                )
+            if id_string.startswith(self._p):
+                wikipedia_string = id_string[len(self._p):]
             else:
-                wikipedia_string = sub(
-                    "\0+", "", sub("\s+", "", unquote(id_string))
-                )
+                wikipedia_string = id_string
+
+            wikipedia_string = sub("\0+", "", sub("[^0-9]", "", unquote(wikipedia_string)))
             return "%s%s" % (
                 self._p if include_prefix else "",
                 wikipedia_string.strip(),
@@ -105,8 +100,18 @@ class WikipediaManager(IdentifierManager):
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
                             if get_extra_info:
-                                return True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False, self.extra_info(json_res)
-                            return True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False
+                                extra_info_result = {}
+                                try:
+                                    result = True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False
+                                    extra_info_result["valid"] = result
+                                    return result, extra_info_result
+                                except KeyError:
+                                    extra_info_result["valid"] = False
+                                    return False, extra_info_result
+                            try:
+                                return True if 'title' in json_res['query']['pages'][wikipedia_id].keys() else False
+                            except KeyError:
+                                return False
 
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:

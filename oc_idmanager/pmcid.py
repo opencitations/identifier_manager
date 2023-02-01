@@ -43,9 +43,10 @@ class PMCIDManager(IdentifierManager):
         # The ID Converter API only provides alternative IDs (doi, pmid) for the work associated to the queried pmcid.
 
     def is_valid(self, pmcid, get_extra_info=False):
+
         pmcid = self.normalise(pmcid, include_prefix=True)
 
-        if pmcid is None or not self.syntax_ok(pmcid):
+        if pmcid is None:
             return False
         else:
             if pmcid not in self._data or self._data[pmcid] is None:
@@ -54,18 +55,21 @@ class PMCIDManager(IdentifierManager):
                     self._data[pmcid] = info[1]
                     return (info[0] and self.syntax_ok(pmcid)), info[1]
                 self._data[pmcid] = dict()
-                self._data[pmcid]["valid"] = True if self.exists(pmcid) and self.syntax_ok(pmcid) else False
-                return self.exists(pmcid) and self.syntax_ok(pmcid)
+                self._data[pmcid]["valid"] = True if (self.exists(pmcid) and self.syntax_ok(pmcid)) else False
+                return self._data[pmcid].get("valid")
             if get_extra_info:
                 return self._data[pmcid].get("valid"), self._data[pmcid]
             return self._data[pmcid].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
-        id_string = id_string.upper()
         try:
+            if id_string.startswith(self._p):
+                pmcid_string = id_string[len(self._p):]
+            else:
+                pmcid_string = id_string
+
             pmcid_string = sub(
-                "\0+", "", sub("\s+", "", unquote(id_string))
+                "\0+", "", sub("\s+", "", unquote(id_string[id_string.index("PMC"):]))
             )
             return "%s%s" % (
                 self._p if include_prefix else "",
@@ -79,8 +83,7 @@ class PMCIDManager(IdentifierManager):
 
         if not id_string.startswith("pmcid:"):
             id_string = self._p + id_string
-            # the regex admits the prefix (PMC) and version number suffix (a dot followed by a number of max 2 digits)
-        return True if match(r"^pmcid:(PMC)?[1-9]\d+(\.\d{1,2})?$", id_string) else False
+        return True if match(r"^pmcid:PMC[1-9]\d+(\.\d{1,2})?$", id_string) else False
 
     def exists(self, pmcid_full, get_extra_info=False, allow_extra_api=None):
         valid_bool = True
@@ -102,8 +105,20 @@ class PMCIDManager(IdentifierManager):
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
                             if get_extra_info:
-                                return True if match(f'^(PMC)?{pmcid}$', json_res['records'][0]['pmcid']) else False, self.extra_info(json_res)
-                            return True if match(f'^(PMC)?{pmcid}$', json_res['records'][0]['pmcid']) else False
+                                extra_info_result = {}
+                                try:
+                                    result = True if not json_res['records'][0].get('status') =='error' else False
+                                    extra_info_result['valid'] = result
+                                    return result, extra_info_result
+                                except KeyError:
+                                    extra_info_result["valid"] = False
+                                    return False, extra_info_result
+                            try:
+                                return True if not json_res['records'][0].get('status') =='error' else False
+
+                            except KeyError:
+                                return False
+
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:
                                 return False, {"valid": False}

@@ -99,6 +99,12 @@
 
     "wikidata:Q12": {"valid": false},
 
+    "wikipedia:30456": {"valid":  true},
+
+    "wikipedia:43744177": {"valid":  true},
+
+    "wikipedia:01267548": {"valid":  false},
+
     "url:datacite.org": {"valid":  true},
 
     "url:opencitations.net": {"valid":  true}

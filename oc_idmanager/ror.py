@@ -40,7 +40,7 @@ class RORManager(IdentifierManager):
     def is_valid(self, ror_id, get_extra_info=False):
         ror_id = self.normalise(ror_id, include_prefix=True)
 
-        if ror_id is None or not self.syntax_ok(ror_id):
+        if ror_id is None:
             return False
         else:
             if ror_id not in self._data or self._data[ror_id] is None:
@@ -49,19 +49,21 @@ class RORManager(IdentifierManager):
                     self._data[ror_id] = info[1]
                     return (info[0] and self.syntax_ok(ror_id)), info[1]
                 self._data[ror_id] = dict()
-                self._data[ror_id]["valid"] = True if self.exists(ror_id) and self.syntax_ok(ror_id) else False
-                return self.exists(ror_id) and self.syntax_ok(ror_id)
+                self._data[ror_id]["valid"] = True if (self.exists(ror_id) and self.syntax_ok(ror_id)) else False
+                return self._data[ror_id].get("valid")
             if get_extra_info:
                 return self._data[ror_id].get("valid"), self._data[ror_id]
             return self._data[ror_id].get("valid")
 
     def normalise(self, id_string, include_prefix=False):
-
-        id_string = id_string.lower()
         try:
-            ror_id_string = sub(
-                "\0+", "", sub("\s+", "", unquote(id_string))
-            )
+            if id_string.startswith(self._p):
+                ror_id_string = id_string[len(self._p):]
+            else:
+                ror_id_string = id_string
+            #  normalize + remove protocol and domain name if they are included in the ID
+            ror_id_string = sub("\0+", "", sub("(https://)?ror\\.org/", "", sub('\s+', "", unquote(ror_id_string))))
+
             return "%s%s" % (
                 self._p if include_prefix else "",
                 ror_id_string.strip(),
@@ -73,6 +75,7 @@ class RORManager(IdentifierManager):
     def syntax_ok(self, id_string):
         if not id_string.startswith("ror:"):
             id_string = self._p + id_string
+        # the regex admits the identifier with or without the protocol and the domain name
         return True if match(r"^ror:((https:\/\/)?ror\.org\/)?0[a-hj-km-np-tv-z|0-9]{6}[0-9]{2}$", id_string) else False
 
     def exists(self, ror_id_full, get_extra_info=False, allow_extra_api=None):
@@ -84,13 +87,24 @@ class RORManager(IdentifierManager):
                 while tentative:
                     tentative -= 1
                     try:
-                        r = get(self._api + quote(ror_id), headers=self._headers, timeout=30)
+                        r = get(self._api + ror_id, headers=self._headers, timeout=30)
                         if r.status_code == 200:
                             r.encoding = "utf-8"
                             json_res = loads(r.text)
                             if get_extra_info:
-                                return True if json_res['id'] else False, self.extra_info(json_res)
-                            return True if json_res['id'] else False
+                                extra_info_result = {}
+                                try:
+                                    result = True if json_res['id'] else False
+                                    extra_info_result['valid'] = result
+                                    return result, extra_info_result
+                                except KeyError:
+                                    extra_info_result["valid"] = False
+                                    return False, extra_info_result
+                            try:
+                                return True if json_res['id'] else False
+                            except KeyError:
+                                return False
+
                         elif 400 <= r.status_code < 500:
                             if get_extra_info:
                                 return False, {"valid": False}
