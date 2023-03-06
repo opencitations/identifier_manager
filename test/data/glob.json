@@ -107,6 +107,16 @@
 
     "url:datacite.org": {"valid":  true},
 
-    "url:opencitations.net": {"valid":  true}
+    "url:opencitations.net": {"valid":  true},
+
+    "jid:otoljpn1970": {"valid":true},
+
+    "jid:jscej1944b": {"valid":true},
+
+    "jid:kantoh": {"valid": true},
+
+    "jid:japeoj" : {"valid":true},
+    
+    "jid:gee1973e": {"valid":false}
 
 }
