@@ -12,6 +12,7 @@ requests = "^2.28.1"
 lxml = "^4.9.1"
 validators = "^0.20.0"
 oc-meta = "1.2.4"
+xmltodict = "^0.13.0"
 
 [tool.poetry.dev-dependencies]
 coverage = "^6.4.4"
