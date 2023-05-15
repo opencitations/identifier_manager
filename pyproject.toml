@@ -21,3 +21,6 @@ coverage-badge = "^1.1.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+test = 'test.run_all_tests:main'
